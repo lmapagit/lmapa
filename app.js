@@ -6,19 +6,10 @@
 (() => {
   'use strict';
 
-  // Mapas de fundo, em ordem de preferência. Se um não carregar (ex.: o CARTO pede chave quando
-  // a página é aberta do disco), o próximo é usado. Abrindo do disco, começa pelo Esri.
+  // Mapas de fundo, em ordem de preferência; se um não carregar, o próximo é usado.
+  // (O CARTO saiu da lista: ele passou a devolver uma imagem "api key required".)
   const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   const PROVEDORES = [
-    {
-      nome: 'CARTO',
-      clara: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      escura: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      imagem: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-      opcoes: { subdomains: 'abcd', maxZoom: 19 },
-      credito: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
-      creditoTexto: 'Mapa base © OpenStreetMap, CARTO',
-    },
     {
       nome: 'Esri',
       clara: `${ESRI}World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
@@ -27,6 +18,15 @@
       opcoes: { maxZoom: 19, maxNativeZoom: 18 },
       credito: 'Mapa base © <a href="https://www.esri.com">Esri</a>, HERE, Garmin, © OpenStreetMap',
       creditoTexto: 'Mapa base © Esri, HERE, Garmin, OpenStreetMap',
+    },
+    {
+      nome: 'OpenStreetMap',
+      clara: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      escura: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      imagem: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      opcoes: { maxZoom: 19 },
+      credito: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      creditoTexto: 'Mapa base © OpenStreetMap',
     },
   ];
   const ROTEADOR_A_PE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
@@ -46,7 +46,7 @@
     voce: null,
     marcando: false,
     semRuas: false,
-    provedor: location.protocol === 'file:' ? 1 : 0,
+    provedor: 0,
   };
 
   const $ = (id) => document.getElementById(id);

@@ -292,7 +292,9 @@
           "bairro": "nm_bairro_equipamento",
           "telefone": "tx_numero_telefone",
           "tipo": "tx_tipo_equipamento"
-        }
+        },
+        "ordenar_por": "cd_identificador",
+        "campo_id": "cd_identificador"
       }
     },
     {
@@ -408,7 +410,9 @@
           "endereco": "tx_endereco_equipamento",
           "bairro": "nm_bairro_equipamento",
           "telefone": "tx_numero_telefone"
-        }
+        },
+        "ordenar_por": "cd_identificador",
+        "campo_id": "cd_identificador"
       }
     },
     {
@@ -497,7 +501,9 @@
         "campos": {
           "nome": "nm_ponto_onibus",
           "referencia": "tx_endereco_ponto_onibus"
-        }
+        },
+        "ordenar_por": "cd_identificador_ponto_onibus",
+        "campo_id": "cd_identificador_ponto_onibus"
       },
       "zoom_minimo": 15
     },
@@ -575,49 +581,6 @@
           "servicos": "tx_servico"
         },
         "prefixo_nome": "Descomplica SP "
-      }
-    },
-    {
-      "id": "cras",
-      "nome": "CRAS, CREAS e Centros POP",
-      "tema": "servicos",
-      "arquivo": "data/cras.geojson",
-      "simbolo": "AS",
-      "campos_popup": [
-        {
-          "campo": "endereco",
-          "rotulo": "Endereço"
-        },
-        {
-          "campo": "bairro",
-          "rotulo": "Bairro"
-        },
-        {
-          "campo": "telefone",
-          "rotulo": "Telefone"
-        }
-      ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_assistencia_social"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_assistencia_social",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
-        },
-        "filtro_nome": [
-          "CRAS",
-          "CREAS",
-          "CENTRO POP",
-          "CENTRO DE REFERENCIA"
-        ]
       }
     },
     {

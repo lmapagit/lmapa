@@ -27,7 +27,6 @@ Todas vêm do GeoSampa (Prefeitura de São Paulo), pelo serviço WFS `https://wf
 | Transporte | Pontos de ônibus (aparecem só com o mapa aproximado) | `geoportal:ponto_onibus` |
 | Serviços essenciais | Restaurantes Bom Prato | `geoportal:equipamento_bom_prato` |
 | Serviços essenciais | Descomplica SP | `geoportal:descomplica` |
-| Serviços essenciais | CRAS, CREAS e Centros POP | `geoportal:equipamento_assistencia_social` (filtrado pelo nome) |
 | Serviços essenciais | Feiras livres | `geoportal:equipamento_feira_livre` |
 | Cultura e lazer | Bibliotecas públicas | `geoportal:equipamento_cultura_bibliotecas` |
 | Cultura e lazer | Centros culturais | `geoportal:equipamento_cultura_espacos_culturais` |
@@ -102,5 +101,4 @@ Depois abra http://localhost:8000. Abrir o `index.html` direto (duplo clique) n�
 
 - A localização por GPS só funciona em HTTPS (o GitHub Pages já usa) e depende da permissão do navegador.
 - O traçado pelas ruas usa o servidor público de rotas do projeto FOSSGIS (routing.openstreetmap.de), que é gratuito e sem garantia de disponibilidade. Quando não responde, a rota aparece em linha reta e o tempo é estimado a 4,8 km/h.
-- Só 3 bases já vêm com dados (metrô, AMAs e Bom Prato, baixados em 06/10/2026). As outras aparecem como "aguardando a primeira atualização" até você rodar "Baixar dados" no GitHub, porque o ambiente onde o site foi montado não tinha acesso direto ao GeoSampa.
-- A camada de CRAS usa um filtro pelo nome sobre a base geral de assistência social; confira a quantidade depois do primeiro download.
+- O GeoSampa não tem os CRAS como pontos (só as áreas de abrangência), por isso eles ficaram de fora.
