@@ -93,7 +93,7 @@ def titulo(texto):
     """'AMA 12H JARDIM SÃO LUIZ' -> 'AMA 12H Jardim São Luiz'."""
     palavras = []
     for i, p in enumerate(texto.split(" ")):
-        if p.upper() in SIGLAS:
+        if p.upper() in SIGLAS or p.upper().rstrip(".").replace(".", "") in SIGLAS | {"CCE", "EMEB", "EEPG", "EEPSG", "CEMEF"}:
             palavras.append(p.upper())
         elif i > 0 and p.lower() in MINUSCULAS:
             palavras.append(p.lower())
