@@ -355,3 +355,20 @@ input[type="search"] {
 .titulo-bases .rotulo { margin: 0; }
 .botao.mini-texto { padding: 4px 10px; font-size: 13px; min-height: 0; }
 .botao.mini-texto[aria-pressed="true"] { background: transparent; color: inherit; border-color: currentColor; }
+
+/* Destaque eleitoral */
+.caixa-eleitoral { margin-top: 18px; padding-top: 12px; border-top: 2px solid var(--linha); }
+.caixa-eleitoral .alternar { align-items: flex-start; }
+.caixa-eleitoral .alternar input { margin-top: 3px; accent-color: #ff7a1a; flex: none; }
+.eleitoral-opcoes { display: grid; gap: 10px; margin-top: 10px; padding-left: 4px; }
+.eleitoral-opcoes > label:not(.alternar) { display: grid; gap: 4px; font-size: 13.5px; color: var(--tinta-suave); }
+.eleitoral-opcoes select {
+  font: inherit; color: var(--tinta); background: var(--superficie);
+  border: 1px solid var(--linha); border-radius: var(--raio); padding: 8px 10px; min-height: 40px;
+}
+.popup-eleitoral { margin: 8px 0; font-size: 13px; display: grid; gap: 4px; }
+.selo-destaque { display: inline-block; background: #ff7a1a; color: #1d0b00; border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+.carregando {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 800; margin: 0;
+  background: var(--placa); color: var(--placa-texto); padding: 6px 12px; border-radius: 999px; font-size: 13px;
+}

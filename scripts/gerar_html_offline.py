@@ -17,11 +17,11 @@ def ler(caminho):
 def main():
     config = json.loads(ler("camadas.json"))
     arquivos = {"camadas.json": config}
-    for c in config["camadas"]:
-        if (RAIZ / c["arquivo"]).exists():
-            arquivos[c["arquivo"]] = json.loads(ler(c["arquivo"]))
-    if (RAIZ / "data/municipios.geojson").exists():
-        arquivos["data/municipios.geojson"] = json.loads(ler("data/municipios.geojson"))
+    extras = ["data/municipios.geojson"] + ([config["eleitoral"]["arquivo"]] if config.get("eleitoral") else [])
+    caminhos = [p for c in config["camadas"] for p in sorted((RAIZ / c["pasta"]).glob("*.json"))]
+    caminhos += [RAIZ / e for e in extras if (RAIZ / e).exists()]
+    for caminho in caminhos:
+        arquivos[caminho.relative_to(RAIZ).as_posix()] = json.loads(caminho.read_text(encoding="utf-8"))
 
     # Serve os arquivos embutidos no lugar do fetch, que não funciona em páginas abertas do disco
     ponte = (
@@ -38,9 +38,9 @@ def main():
 
     html = ler("index.html")
     html = html.replace('<link rel="stylesheet" href="vendor/leaflet.css">', f"<style>\n{ler('vendor/leaflet.css')}\n</style>")
-    html = html.replace('<link rel="stylesheet" href="estilo.css">', f"<style>\n{ler('estilo.css')}\n</style>")
+    html = html.replace('<link rel="stylesheet" href="estilo.css?v=3">', f"<style>\n{ler('estilo.css')}\n</style>")
     html = html.replace('<script src="vendor/leaflet.js"></script>', f"<script>\n{ler('vendor/leaflet.js')}\n</script>\n{ponte}")
-    html = html.replace('<script src="app.js"></script>', f"<script>\n{ler('app.js')}\n</script>")
+    html = html.replace('<script src="app.js?v=3"></script>', f"<script>\n{ler('app.js')}\n</script>")
     destino = RAIZ / "lmapa-offline.html"
     destino.write_text(html, encoding="utf-8")
     print(f"{destino.name}: {destino.stat().st_size / 1e6:.1f} MB, {len(arquivos) - 1} arquivos de dados embutidos")

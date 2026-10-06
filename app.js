@@ -1,7 +1,8 @@
 /* Mapa de Infraestrutura
- * Lê camadas.json, carrega cada GeoJSON listado e monta filtros, "perto de mim",
- * rota com pontos de interesse e exportação da rota como imagem.
- * Para incluir uma nova base: adicione o GeoJSON em data/ e uma entrada em camadas.json.
+ * Lê camadas.json, carrega os pontos de cada base conforme a área visível e monta
+ * filtros, "perto de mim", rota com pontos de interesse, exportação da rota como
+ * imagem e o destaque opcional de locais perto de seções eleitorais.
+ * Para incluir uma nova base: adicione uma entrada em camadas.json e rode "Baixar dados".
  */
 (() => {
   'use strict';
@@ -32,11 +33,14 @@
   const ROTEADOR_A_PE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
   const VELOCIDADE_A_PE_KMH = 4.8;
   const CHAVE_ROTA = 'lmapa:rota';
+  // No celular o dedo cobre o ponto: área de toque maior e pontos um pouco maiores
+  const TOQUE = matchMedia('(pointer: coarse)').matches;
+  const RAIO_PONTO = TOQUE ? 7 : 6;
 
   const estado = {
     config: null,
     temas: new Map(),        // id -> {id, nome, cor}
-    camadas: [],             // configs das camadas carregadas
+    camadas: [],             // configs das camadas (com o índice de cada uma)
     grupos: new Map(),       // id da camada -> L.layerGroup
     pontos: new Map(),       // id do ponto -> ponto
     temasAtivos: new Set(),
@@ -77,7 +81,12 @@
   };
 
   // ---------- Mapa ----------
-  const mapa = L.map('mapa', { preferCanvas: true, zoomControl: true, attributionControl: true });
+  const mapa = L.map('mapa', {
+    preferCanvas: true,
+    renderer: L.canvas({ tolerance: TOQUE ? 14 : 4, padding: 0.3 }),
+    zoomControl: true,
+    attributionControl: true,
+  });
   let base = null;
   let municipios = null;
 
@@ -135,45 +144,84 @@
   }
 
   // ---------- Dados ----------
+  // Cada base é uma pasta com indice.json e os pontos: num arquivo só (todos.json) ou,
+  // nas bases grandes, em blocos de meio grau. Só os blocos da área na tela são baixados.
+  async function lerJSON(url) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+    return r.json();
+  }
+
   async function iniciar() {
-    const config = await (await fetch('camadas.json')).json();
+    const config = await lerJSON('camadas.json');
     estado.config = config;
     $('titulo').textContent = config.titulo;
     mapa.setView(config.centro_inicial, config.zoom_inicial);
     criarBase();
-    config.temas.forEach((t) => { estado.temas.set(t.id, t); estado.temasAtivos.add(t.id); });
+    // Um tema pode começar desligado ("ligado": false em camadas.json), como Religião, que é muito denso
+    config.temas.forEach((t) => { estado.temas.set(t.id, t); if (t.ligado !== false) estado.temasAtivos.add(t.id); });
 
-    // Uma base cujo arquivo ainda não existe (ex.: antes da primeira atualização) aparece como pendente
-    const resultados = await Promise.all(config.camadas.map(async (c) => {
-      try {
-        const r = await fetch(c.arquivo);
-        if (!r.ok) throw new Error(`${c.arquivo}: HTTP ${r.status}`);
-        return { c, geo: await r.json() };
-      } catch (erro) {
-        console.warn('Base não carregada', erro);
-        return { c, geo: null };
-      }
-    }));
-    for (const { c, geo } of resultados) adicionarCamada(c, geo);
-    mapa.on('zoomend', atualizarVisibilidade);
+    // Uma base cujo índice ainda não existe (ex.: antes da primeira atualização) aparece como pendente
+    const indices = await Promise.all(config.camadas.map((c) => lerJSON(`${c.pasta}/indice.json`).catch((erro) => {
+      console.warn('Base não carregada', erro);
+      return null;
+    })));
+    config.camadas.forEach((c, i) => prepararCamada(c, indices[i]));
+    mapa.on('moveend', atualizarVisibilidade);
     desenharTemas();
     desenharCamadas();
-    atualizarVisibilidade();
-    restaurarRota();
-    const total = estado.pontos.size;
+    prepararEleitoral();
+    await atualizarVisibilidade();
+    await restaurarRota();
+    const total = estado.camadas.reduce((s, c) => s + c._qtd, 0);
     $('resumo').textContent = `${total.toLocaleString('pt-BR')} locais em ${estado.camadas.length} bases`;
   }
 
-  function adicionarCamada(c, geo) {
+  function prepararCamada(c, indice) {
+    c._indice = indice;
+    c._qtd = indice?.total || 0;
+    c._atualizado = indice?.atualizado_em;
+    c._pendente = !indice;
+    c._blocos = new Map();   // bloco -> Promise do download
+    estado.camadas.push(c);
+    estado.grupos.set(c.id, L.layerGroup());
+    estado.camadasAtivas.add(c.id);
+  }
+
+  // Blocos da camada que cruzam a área (padrão: a tela, com folga)
+  function blocosDaArea(c, area) {
+    const g = c._indice?.bloco_graus;
+    if (!c._indice) return [];
+    if (!g) return ['todos'];
+    const a = area || mapa.getBounds().pad(0.25);
+    const lista = [];
+    for (let x = Math.floor(a.getWest() / g); x <= Math.floor(a.getEast() / g); x++) {
+      for (let y = Math.floor(a.getSouth() / g); y <= Math.floor(a.getNorth() / g); y++) {
+        const chave = `${x}_${y}`;
+        if (c._indice.blocos[chave]) lista.push(chave);
+      }
+    }
+    return lista;
+  }
+
+  function carregarBloco(c, chave) {
+    if (!c._blocos.has(chave)) {
+      c._blocos.set(chave, lerJSON(`${c.pasta}/${chave}.json`)
+        .then((geo) => adicionarPontos(c, geo))
+        .catch((erro) => { console.warn('Bloco não carregado', erro); c._blocos.delete(chave); }));
+    }
+    return c._blocos.get(chave);
+  }
+
+  function adicionarPontos(c, geo) {
     const tema = estado.temas.get(c.tema);
     const cor = c.cor || tema?.cor || '#555';
-    const grupo = L.layerGroup();
-    let qtd = 0;
+    const grupo = estado.grupos.get(c.id);
     for (const f of geo?.features || []) {
-      if (!f.geometry || f.geometry.type !== 'Point') continue;
+      if (!f.geometry || f.geometry.type !== 'Point' || estado.pontos.has(f.properties.id)) continue;
       const [lng, lat] = f.geometry.coordinates;
       const p = {
-        id: f.properties.id || `${c.id}-${qtd}`,
+        id: f.properties.id,
         nome: f.properties.nome || 'Sem nome',
         props: f.properties,
         camada: c,
@@ -181,19 +229,28 @@
         cor,
         latlng: L.latLng(lat, lng),
       };
-      p.marcador = L.circleMarker(p.latlng, { radius: 6, color: '#ffffff', weight: 1.5, fillColor: cor, fillOpacity: 0.95 })
-        .bindPopup(() => conteudoPopup(p), { maxWidth: 300 })
-        .bindTooltip(p.nome, { direction: 'top', offset: [0, -6] });
+      p.marcador = L.circleMarker(p.latlng, estiloPonto(p))
+        .bindPopup(() => conteudoPopup(p), { maxWidth: 300 });
+      // No celular o rótulo flutuante atrapalha o toque; o nome aparece no balão
+      if (!TOQUE) p.marcador.bindTooltip(p.nome, { direction: 'top', offset: [0, -6] });
       p.marcador.addTo(grupo);
       estado.pontos.set(p.id, p);
-      qtd++;
     }
-    c._qtd = qtd;
-    c._atualizado = geo?.metadata?.atualizado_em;
-    c._pendente = !geo;
-    estado.camadas.push(c);
-    estado.grupos.set(c.id, grupo);
-    estado.camadasAtivas.add(c.id);
+  }
+
+  const estiloBase = (p) => ({ radius: RAIO_PONTO, color: '#ffffff', weight: 1.5, opacity: 1, fillColor: p.cor, fillOpacity: 0.95 });
+
+  // Garante que os pontos de uma lista de ids estejam carregados (ex.: rota vinda de um link)
+  async function carregarIds(ids) {
+    const pendentes = [];
+    for (const id of ids) {
+      const [camadaId, meio] = id.split('.');
+      const c = estado.camadas.find((x) => x.id === camadaId);
+      if (!c?._indice) continue;
+      const chave = c._indice.bloco_graus ? meio : 'todos';
+      if (c._indice.blocos[chave]) pendentes.push(carregarBloco(c, chave));
+    }
+    await Promise.all(pendentes);
   }
 
   function conteudoPopup(p) {
@@ -213,8 +270,9 @@
       el('span', { class: 'popup-tema' }, p.tema?.nome || p.camada.nome),
       el('p', { class: 'popup-nome' }, p.nome),
       campos.childElementCount ? campos : null,
+      blocoEleitoral(p),
       botao,
-      el('p', { class: 'popup-fonte' }, `${p.camada.nome} · ${p.camada.fonte?.nome || ''}${data}`),
+      el('p', { class: 'popup-fonte' }, `${p.camada.nome} · ${p.props.fonte || ''}${data}`),
     );
   }
 
@@ -269,29 +327,237 @@
       const data = c._atualizado ? ` · atualizado em ${c._atualizado.split('-').reverse().join('/')}` : '';
       const qtd = c._pendente ? 'aguardando a primeira atualização' : `${c._qtd.toLocaleString('pt-BR')} locais`;
       const zoom = c.zoom_minimo ? ' · aparece ao aproximar o mapa' : '';
+      const cobertura = c.cobertura ? `${c.cobertura} · ` : '';
+      const creditos = (c.creditos || []).flatMap((f, i) => [i ? ', ' : '',
+        f.url ? el('a', { href: f.url, target: '_blank', rel: 'noopener' }, f.nome) : f.nome]);
       lista.append(el('li', { class: 'camada', style: `--cor:${estado.temas.get(c.tema)?.cor}` },
         el('input', {
           type: 'checkbox', id, checked: estado.camadasAtivas.has(c.id) ? 'checked' : false,
           onchange: (e) => { e.target.checked ? estado.camadasAtivas.add(c.id) : estado.camadasAtivas.delete(c.id); desenharBotaoTodas(); atualizarVisibilidade(); },
         }),
         el('label', { for: id }, c.nome),
-        el('span', { class: 'meta' }, `${qtd}${data}${zoom} · `,
-          c.fonte?.url ? el('a', { href: c.fonte.url, target: '_blank', rel: 'noopener' }, c.fonte.nome) : (c.fonte?.nome || '')),
+        el('span', { class: 'meta' }, `${cobertura}${qtd}${data}${zoom} · `, ...creditos),
       ));
     }
   }
 
   const visivel = (p) => estado.camadasAtivas.has(p.camada.id) && estado.temasAtivos.has(p.camada.tema);
 
-  function atualizarVisibilidade() {
+  async function atualizarVisibilidade() {
+    const downloads = [];
     for (const c of estado.camadas) {
       const grupo = estado.grupos.get(c.id);
       const mostrar = estado.camadasAtivas.has(c.id) && estado.temasAtivos.has(c.tema)
         && mapa.getZoom() >= (c.zoom_minimo || 0);
+      if (mostrar) for (const chave of blocosDaArea(c)) downloads.push(carregarBloco(c, chave));
       if (mostrar && !mapa.hasLayer(grupo)) grupo.addTo(mapa);
       if (!mostrar && mapa.hasLayer(grupo)) mapa.removeLayer(grupo);
     }
+    if (downloads.length) {
+      $('carregando').hidden = false;
+      await Promise.all(downloads);
+      $('carregando').hidden = true;
+    }
+    aplicarEleitoral();
     desenharPerto();
+  }
+
+  // ---------- Destaque eleitoral ----------
+  // Destaca os locais do mapa que ficam perto de locais de votação com muitos eleitores
+  // que não votaram em nenhum dos dois principais candidatos (abstenções, brancos, nulos
+  // e votos nos demais candidatos). Liga e desliga no painel; os dados vêm do TSE.
+  const COR_DESTAQUE = '#ff7a1a';
+  const eleitoral = {
+    ligado: false,
+    dados: null,          // {metadata, locais:[...]}
+    pedido: null,
+    grade: new Map(),     // célula de 0,01° -> locais de votação
+    medida: 'abs',
+    corte: 20,
+    raio: 500,
+    comparar: 'estado',
+    mostrarLocais: true,
+    esconder: false,
+  };
+  mapa.createPane('eleitoral').style.zIndex = 390;   // abaixo dos pontos das bases
+  const camadaLocais = L.layerGroup();
+  const rendLocais = L.canvas({ pane: 'eleitoral', tolerance: TOQUE ? 10 : 3 });
+  const fmtN = (n) => Math.round(n).toLocaleString('pt-BR');
+  const fmtPct = (x) => `${(x * 100).toFixed(0)}%`;
+  const celula = (lat, lng) => `${Math.floor(lat * 100)}_${Math.floor(lng * 100)}`;
+
+  function nomesCandidatos() {
+    const c = eleitoral.dados?.metadata?.candidatos || [];
+    return [c[0]?.nome || 'candidato 1', c[1]?.nome || 'candidato 2'];
+  }
+
+  function prepararEleitoral() {
+    const cfg = estado.config.eleitoral;
+    $('caixa-eleitoral').hidden = !cfg;
+    if (!cfg) return;
+    const ligar = $('eleitoral-ligar');
+    ligar.addEventListener('change', async () => {
+      eleitoral.ligado = ligar.checked;
+      $('eleitoral-opcoes').hidden = !ligar.checked;
+      if (ligar.checked && !eleitoral.dados) {
+        $('eleitoral-resumo').textContent = 'Carregando os dados eleitorais…';
+        try { await carregarEleitoral(); } catch (erro) {
+          console.warn(erro);
+          $('eleitoral-resumo').textContent = 'Os dados eleitorais ainda não foram baixados. Rode "Baixar dados" no GitHub.';
+          return;
+        }
+      }
+      recalcularEleitoral();
+    });
+    const ligarSelect = (id, campo, conv = (v) => v) => $(id).addEventListener('change', (e) => { eleitoral[campo] = conv(e.target.value); recalcularEleitoral(); });
+    ligarSelect('eleitoral-medida', 'medida');
+    ligarSelect('eleitoral-corte', 'corte', Number);
+    ligarSelect('eleitoral-raio', 'raio', Number);
+    ligarSelect('eleitoral-comparar', 'comparar');
+    $('eleitoral-locais').addEventListener('change', (e) => { eleitoral.mostrarLocais = e.target.checked; recalcularEleitoral(); });
+    $('eleitoral-esconder').addEventListener('change', (e) => { eleitoral.esconder = e.target.checked; recalcularEleitoral(); });
+  }
+
+  async function carregarEleitoral() {
+    eleitoral.pedido ||= lerJSON(estado.config.eleitoral.arquivo);
+    const bruto = await eleitoral.pedido;
+    const ix = Object.fromEntries(bruto.campos.map((c, i) => [c, i]));
+    const locais = bruto.locais.map((r) => {
+      const l = {};
+      for (const [c, i] of Object.entries(ix)) l[c] = r[i];
+      l.fora = Math.max(l.aptos - l.c1 - l.c2, 0);
+      l.pct = l.aptos ? l.fora / l.aptos : 0;
+      l.latlng = L.latLng(l.lat, l.lng);
+      return l;
+    });
+    for (const l of locais) {
+      const k = celula(l.lat, l.lng);
+      if (!eleitoral.grade.has(k)) eleitoral.grade.set(k, []);
+      eleitoral.grade.get(k).push(l);
+    }
+    eleitoral.dados = { metadata: bruto.metadata, locais };
+    const [a, b] = nomesCandidatos();
+    $('eleitoral-explica').textContent = `Conta, em cada local de votação, quem não votou em ${a} nem em ${b}: abstenções, votos brancos, nulos e votos nos demais candidatos. ${bruto.metadata.eleicao}.`;
+  }
+
+  // Marca como "destacados" os locais de votação no topo da medida escolhida
+  function marcarDestacados() {
+    const valor = (l) => (eleitoral.medida === 'abs' ? l.fora : (l.aptos >= 100 ? l.pct : -1));
+    const grupos = new Map();
+    for (const l of eleitoral.dados.locais) {
+      l.destacado = false;
+      const g = eleitoral.comparar === 'municipio' ? l.municipio : '';
+      if (!grupos.has(g)) grupos.set(g, []);
+      grupos.get(g).push(l);
+    }
+    let total = 0;
+    for (const lista of grupos.values()) {
+      const validos = lista.filter((l) => valor(l) >= 0).sort((x, y) => valor(y) - valor(x));
+      const n = Math.ceil((validos.length * eleitoral.corte) / 100);
+      validos.slice(0, n).forEach((l) => { l.destacado = true; });
+      total += n;
+    }
+    return total;
+  }
+
+  // Local de votação mais próximo (até 2 km) e destacado mais próximo dentro do raio
+  function vizinhosEleitorais(latlng) {
+    const alcance = 2000;
+    const passos = Math.ceil(alcance / 1100) + 1;
+    const cy = Math.floor(latlng.lat * 100), cx = Math.floor(latlng.lng * 100);
+    let perto = null, dPerto = Infinity, quente = null, dQuente = Infinity;
+    for (let y = cy - passos; y <= cy + passos; y++) {
+      for (let x = cx - passos; x <= cx + passos; x++) {
+        for (const l of eleitoral.grade.get(`${y}_${x}`) || []) {
+          const d = latlng.distanceTo(l.latlng);
+          if (d < dPerto && d <= alcance) { perto = l; dPerto = d; }
+          if (l.destacado && d < dQuente && d <= eleitoral.raio) { quente = l; dQuente = d; }
+        }
+      }
+    }
+    return { perto, dPerto, quente, dQuente };
+  }
+
+  function estiloPonto(p) {
+    if (!eleitoral.ligado || !eleitoral.dados || !p._eleitoral) return estiloBase(p);
+    if (p._eleitoral.quente) return { radius: RAIO_PONTO + 2, color: COR_DESTAQUE, weight: 4, opacity: 1, fillColor: p.cor, fillOpacity: 1 };
+    return { radius: RAIO_PONTO - 1, color: '#ffffff', weight: 1, opacity: 0.35, fillColor: p.cor, fillOpacity: 0.25 };
+  }
+
+  function recalcularEleitoral() {
+    const ativo = eleitoral.ligado && eleitoral.dados;
+    if (ativo) eleitoral.destacados = marcarDestacados();
+    for (const p of estado.pontos.values()) if (p._eleitoral) p._eleitoral = null;
+    camadaLocais.clearLayers();
+    if (ativo && eleitoral.mostrarLocais) {
+      for (const l of eleitoral.dados.locais) {
+        if (!l.destacado) continue;
+        L.circleMarker(l.latlng, { renderer: rendLocais, radius: TOQUE ? 6 : 5, color: '#5c2400', weight: 1.5, fillColor: COR_DESTAQUE, fillOpacity: 0.9 })
+          .bindPopup(() => popupLocal(l), { maxWidth: 300 })
+          .addTo(camadaLocais);
+      }
+      camadaLocais.addTo(mapa);
+    } else if (mapa.hasLayer(camadaLocais)) mapa.removeLayer(camadaLocais);
+    aplicarEleitoral();
+  }
+
+  let eleitoralAplicado = false;
+  function aplicarEleitoral() {
+    const ativo = eleitoral.ligado && eleitoral.dados;
+    if (!ativo && !eleitoralAplicado) return;
+    eleitoralAplicado = Boolean(ativo);
+    let perto = 0;
+    for (const p of estado.pontos.values()) {
+      const grupo = estado.grupos.get(p.camada.id);
+      if (!ativo) {
+        if (p._eleitoral !== undefined) { p._eleitoral = undefined; p.marcador.setStyle(estiloBase(p)); }
+        if (!grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
+        continue;
+      }
+      if (!p._eleitoral) p._eleitoral = vizinhosEleitorais(p.latlng);
+      p.marcador.setStyle(estiloPonto(p));
+      const mostrar = !eleitoral.esconder || p._eleitoral.quente;
+      if (mostrar && !grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
+      if (!mostrar && grupo.hasLayer(p.marcador)) grupo.removeLayer(p.marcador);
+      if (p._eleitoral.quente) {
+        if (visivel(p) && mapa.hasLayer(grupo)) p.marcador.bringToFront();
+        if (visivel(p)) perto++;
+      }
+    }
+    if (!ativo) return;
+    const base = eleitoral.comparar === 'municipio' ? 'em cada município' : 'no estado';
+    const simulado = eleitoral.dados.metadata.simulado ? ' Atenção: dados simulados, só para testar o funcionamento.' : '';
+    $('eleitoral-resumo').textContent = `${fmtN(eleitoral.destacados)} locais de votação destacados (os ${eleitoral.corte}% mais altos ${base}). `
+      + `${fmtN(perto)} locais das bases ligadas, já carregados no mapa, ficam a até ${formatarDist(eleitoral.raio)} de um deles.${simulado}`;
+  }
+
+  function linhaFora(l) {
+    const [a, b] = nomesCandidatos();
+    return `${fmtN(l.fora)} de ${fmtN(l.aptos)} eleitores (${fmtPct(l.pct)}) não votaram em ${a} nem em ${b}`;
+  }
+
+  function popupLocal(l) {
+    const [a, b] = nomesCandidatos();
+    const campos = el('dl', { class: 'popup-campos' });
+    const linhas = [['Município', l.municipio], ['Endereço', l.endereco], ['Eleitores aptos', fmtN(l.aptos)],
+      ['Abstenções', fmtN(l.abstencoes)], ['Brancos', fmtN(l.brancos)], ['Nulos', fmtN(l.nulos)],
+      ['Demais candidatos', fmtN(l.outros)], [a, fmtN(l.c1)], [b, fmtN(l.c2)]];
+    for (const [r, v] of linhas) if (v) campos.append(el('dt', {}, r), el('dd', {}, String(v)));
+    return el('div', { style: `--cor:${COR_DESTAQUE}` },
+      el('span', { class: 'popup-tema' }, 'Local de votação destacado'),
+      el('p', { class: 'popup-nome' }, l.nome),
+      el('p', { class: 'popup-eleitoral' }, linhaFora(l)),
+      campos,
+      el('p', { class: 'popup-fonte' }, eleitoral.dados.metadata.fonte));
+  }
+
+  function blocoEleitoral(p) {
+    if (!eleitoral.ligado || !eleitoral.dados) return null;
+    const v = p._eleitoral || vizinhosEleitorais(p.latlng);
+    if (!v.perto) return el('p', { class: 'popup-eleitoral' }, 'Nenhum local de votação a até 2 km.');
+    return el('div', { class: 'popup-eleitoral' },
+      v.quente ? el('strong', { class: 'selo-destaque' }, `A ${formatarDist(v.dQuente)} de um local de votação destacado`) : null,
+      el('span', {}, `Local de votação mais próximo: ${v.perto.nome}, a ${formatarDist(v.dPerto)}. ${linhaFora(v.perto)}.`));
   }
 
   // ---------- Busca ----------
@@ -302,7 +568,7 @@
     if (termo.length < 2) { caixa.hidden = true; return; }
     const achados = [...estado.pontos.values()].filter((p) => normalizar(p.nome).includes(termo)).slice(0, 15);
     caixa.hidden = false;
-    if (!achados.length) { caixa.append(el('li', { class: 'aviso', style: 'padding:8px 10px' }, 'Nada encontrado nas bases carregadas.')); return; }
+    if (!achados.length) { caixa.append(el('li', { class: 'aviso', style: 'padding:8px 10px' }, 'Nada encontrado na área já carregada. Aproxime o mapa da região e busque de novo.')); return; }
     for (const p of achados) {
       caixa.append(el('li', {}, el('button', { type: 'button', onclick: () => focar(p) },
         el('span', { class: 'ponto', style: `--cor:${p.cor}` }),
@@ -310,13 +576,14 @@
     }
   });
 
-  function focar(p) {
+  async function focar(p) {
     if (!visivel(p)) {
       estado.camadasAtivas.add(p.camada.id);
       estado.temasAtivos.add(p.camada.tema);
-      desenharTemas(); desenharCamadas(); atualizarVisibilidade();
+      desenharTemas(); desenharCamadas();
     }
-    mapa.setView(p.latlng, Math.max(mapa.getZoom(), 15));
+    mapa.setView(p.latlng, Math.max(mapa.getZoom(), 15, p.camada.zoom_minimo || 0));
+    await atualizarVisibilidade();
     p.marcador.openPopup();
   }
 
@@ -546,10 +813,12 @@
     armazenar.gravar(CHAVE_ROTA, estado.rota.join(','));
     try { history.replaceState(null, '', linkDaRota()); } catch { /* ambiente sem histórico */ }
   }
-  function restaurarRota() {
+  async function restaurarRota() {
     const doLink = decodeURIComponent(location.hash).match(/rota=([^&]+)/);
     const texto = doLink ? doLink[1] : armazenar.ler(CHAVE_ROTA);
-    estado.rota = (texto || '').split(',').filter((id) => estado.pontos.has(id));
+    const ids = (texto || '').split(',').filter(Boolean);
+    await carregarIds(ids);
+    estado.rota = ids.filter((id) => estado.pontos.has(id));
     rotaMudou();
     if (doLink && estado.rota.length) {
       abrirAba('rota');
@@ -585,16 +854,6 @@
   });
 
   async function entregarArquivo(blob, nome, url) {
-    // Dentro do Claude (artefato), downloads passam pela capacidade "downloads".
-    if (window.claude && typeof window.claude.use === 'function') {
-      const downloads = await window.claude.use('downloads').catch(() => null);
-      if (downloads) {
-        try { await downloads.save({ filename: nome, data: blob }); return 'Imagem pronta.'; } catch (e) {
-          if (e && e.code === 'declined') return 'Download cancelado. A imagem continua abaixo.';
-        }
-      }
-      return 'Imagem gerada abaixo.';
-    }
     const arquivo = new File([blob], nome, { type: 'image/png' });
     if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
       try { await navigator.share({ files: [arquivo], title: 'Minha rota', text: linkDaRota() }); return 'Imagem compartilhada.'; } catch { /* segue para download */ }

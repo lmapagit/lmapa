@@ -1,38 +1,43 @@
 # Mapa de Infraestrutura
 
-Mapa interativo (Leaflet) de locais com grande circulação de pessoas, a partir de bases públicas. Começa pelo município de São Paulo; outras cidades entram como novas bases em `camadas.json`.
+Mapa interativo (Leaflet) de locais com grande circulação de pessoas, a partir de bases públicas. Cobre o estado de São Paulo; na capital usa as bases da prefeitura (GeoSampa), mais detalhadas. Outras regiões entram como novas fontes em `camadas.json`.
 
-- Filtra por tema (saúde, educação, transporte, serviços essenciais, cultura e lazer) e por base, com um botão para marcar ou desmarcar todas.
+- Filtra por tema (saúde, educação, transporte, serviços essenciais, cultura e lazer, religião) e por base, com um botão para marcar ou desmarcar todas. O tema Religião começa desligado, porque é muito denso.
 - Mostra os locais mais próximos de você (GPS ou ponto marcado no mapa).
 - Monta uma rota passando pelos pontos escolhidos, traçada pelas ruas (a pé) quando o serviço de rotas responde.
 - Salva a rota como imagem PNG e gera um link para compartilhar a mesma rota.
+- Destaque eleitoral (liga e desliga no painel): realça os locais que ficam perto de locais de votação com muitos eleitores que não votaram em nenhum dos dois principais candidatos à Presidência (abstenções, brancos, nulos e votos nos demais candidatos). Dá para medir por número ou percentual, escolher o corte (10%, 20% ou 30% mais altos), comparar com o estado ou com o próprio município e definir a distância (300 m, 500 m ou 1 km).
+- No celular, a área de toque de cada ponto é maior, para não precisar acertar o ponto exato.
 
 ## Bases
 
-Todas vêm do GeoSampa (Prefeitura de São Paulo), pelo serviço WFS `https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows`.
+| Tema | Base | Capital | Demais municípios |
+|---|---|---|---|
+| Saúde | Hospitais | GeoSampa | CNES (tipos 5, 7 e 62) |
+| Saúde | UBS e postos de saúde | GeoSampa | CNES (tipos 1 e 2) |
+| Saúde | Pronto-socorros, UPAs e pronto-atendimentos | GeoSampa | CNES (tipos 20, 21 e 73) |
+| Saúde | Ambulatórios e policlínicas públicos | GeoSampa | CNES (tipos 4 e 36, só públicos) |
+| Educação | Escolas públicas, educação infantil, técnicas, CEUs, particulares | GeoSampa | — |
+| Educação | Escolas, todas as redes | — | Overture Maps |
+| Transporte | Estações de metrô | GeoSampa | — |
+| Transporte | Estações de trem e VLT | GeoSampa | OpenStreetMap (só com operador de passageiros) |
+| Transporte | Terminais e rodoviárias | OpenStreetMap | OpenStreetMap |
+| Transporte | Pontos de ônibus (aparecem com o mapa aproximado) | GeoSampa | OpenStreetMap |
+| Serviços essenciais | Bom Prato, Descomplica | GeoSampa | — |
+| Serviços essenciais | Feiras livres | GeoSampa | Overture Maps (nome com "feira") |
+| Cultura e lazer | Bibliotecas, centros culturais | GeoSampa | Overture Maps |
+| Cultura e lazer | Centros esportivos | GeoSampa | — |
+| Religião | Católica, Evangélica, Espírita, Matriz africana, Outras confissões, Cristã sem confissão identificada | Overture Maps | Overture Maps |
 
-| Tema | Base | Camada no GeoSampa |
-|---|---|---|
-| Saúde | Hospitais | `geoportal:equipamento_saude_hospital` |
-| Saúde | UBS e postos de saúde | `geoportal:equipamento_saude_ubs_posto_centro` |
-| Saúde | Pronto-socorros e AMA 24h | `geoportal:equipamento_saude_urgencia_emergencia` |
-| Saúde | AMAs e ambulatórios especializados | `geoportal:equipamento_saude_ambulatorios_especializados` |
-| Educação | Escolas públicas (fundamental e médio) | `geoportal:equipamento_educacao_rede_publica` |
-| Educação | Educação infantil | `geoportal:equipamento_educacao_infantil_rede_publica` |
-| Educação | Escolas técnicas públicas | `geoportal:equipamento_educacao_ensino_tecnico_rede_publica` |
-| Educação | CEUs | `geoportal:equipamento_educacao_ceu` |
-| Educação | Escolas particulares | `geoportal:equipamento_educacao_rede_privada` |
-| Transporte | Estações de metrô | `geoportal:estacao_metro` |
-| Transporte | Estações de trem | `geoportal:estacao_trem` |
-| Transporte | Pontos de ônibus (aparecem só com o mapa aproximado) | `geoportal:ponto_onibus` |
-| Serviços essenciais | Restaurantes Bom Prato | `geoportal:equipamento_bom_prato` |
-| Serviços essenciais | Descomplica SP | `geoportal:descomplica` |
-| Serviços essenciais | Feiras livres | `geoportal:equipamento_feira_livre` |
-| Cultura e lazer | Bibliotecas públicas | `geoportal:equipamento_cultura_bibliotecas` |
-| Cultura e lazer | Centros culturais | `geoportal:equipamento_cultura_espacos_culturais` |
-| Cultura e lazer | Centros esportivos | `geoportal:equipamento_esporte_centro_esportivo` |
+Fontes:
+- **GeoSampa** (Prefeitura de São Paulo), serviço WFS `https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows`.
+- **CNES** (Ministério da Saúde, OpenDataSUS): arquivo `cnes_estabelecimentos.zip`, com coordenadas. A data do arquivo publicado pelo ministério pode ser antiga.
+- **Overture Maps** (licença CDLA Permissive 2.0) e **OpenStreetMap** (© colaboradores do OpenStreetMap, ODbL), lidos do Overture Maps. São bases colaborativas: podem faltar locais ou haver locais fechados.
+- **TSE** (dados abertos): boletins de urna do 1º turno de 2026 e cadastro de locais de votação (com coordenadas).
 
-Os limites municipais (fundo usado quando o mapa de ruas não carrega) vêm do IBGE, via [tbrugz/geodata-br](https://github.com/tbrugz/geodata-br).
+A confissão dos templos é deduzida pelo nome e pela categoria do Overture, com as regras de `"confissoes"` em `camadas.json` (ex.: "Paróquia", "Capela" → Católica; "Assembleia de Deus", "Batista" → Evangélica). Templos sem pista no nome ficam em "Cristã, sem confissão identificada".
+
+Os limites municipais (usados para saber o município de cada ponto e como fundo quando o mapa de ruas não carrega) vêm do IBGE, via [tbrugz/geodata-br](https://github.com/tbrugz/geodata-br).
 
 ## Estrutura
 
@@ -41,7 +46,8 @@ index.html            página
 estilo.css            visual
 app.js                lógica do mapa
 camadas.json          lista de temas e bases  <- é aqui que se adiciona uma base nova
-data/*.geojson        dados de cada base
+data/<base>/          dados de cada base: indice.json + todos.json (ou blocos, nas bases grandes)
+data/eleitoral/       locais de votação com os votos somados
 scripts/atualizar_dados.py   baixa as bases a partir das fontes
 .github/workflows/atualizar-dados.yml   roda o script no GitHub quando você pedir
 vendor/               Leaflet 1.9.4
@@ -56,25 +62,26 @@ vendor/               Leaflet 1.9.4
      "id": "ceu",
      "nome": "CEUs",
      "tema": "educacao",
-     "arquivo": "data/ceu.geojson",
+     "pasta": "data/ceu",
+     "cobertura": "Cidade de São Paulo",
      "campos_popup": [{ "campo": "endereco", "rotulo": "Endereço" }],
-     "fonte": { "nome": "GeoSampa (Prefeitura de São Paulo)", "url": "https://geosampa.prefeitura.sp.gov.br/" },
-     "atualizacao": {
+     "creditos": [{ "nome": "GeoSampa (Prefeitura de São Paulo)", "url": "https://geosampa.prefeitura.sp.gov.br/" }],
+     "fontes": [{
        "tipo": "wfs",
+       "rotulo": "GeoSampa",
        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
        "typeName": "geoportal:equipamento_educacao_ceu",
        "campos": { "nome": "nm_equipamento", "endereco": "tx_endereco_equipamento" }
-     }
+     }]
    }
    ```
 
-   `campos` diz qual coluna da fonte vira cada informação do mapa. `nome` é obrigatório.
+   Uma base pode juntar várias fontes (ex.: GeoSampa na capital e CNES no resto do estado). Os tipos de fonte e suas opções estão descritos no começo de `scripts/atualizar_dados.py`.
    Para uma base muito grande, acrescente `"zoom_minimo": 15` para os pontos só aparecerem com o mapa aproximado.
 
-2. Gere `data/ceu.geojson`: na aba **Actions** do GitHub, rode "Baixar dados" (ou, no seu computador, `python3 scripts/atualizar_dados.py ceu`).
-   Se a base não vier de um servidor WFS (ex.: uma planilha CSV), basta salvar um GeoJSON de pontos em `data/` com a propriedade `nome` em cada ponto e omitir o bloco `atualizacao`.
+2. Gere os dados: na aba **Actions** do GitHub, rode "Baixar dados" (ou, no seu computador, `python3 scripts/atualizar_dados.py ceu`).
 
-3. Para um tema novo, acrescente-o em `"temas"` com `id`, `nome` e `cor`.
+3. Para um tema novo, acrescente-o em `"temas"` com `id`, `nome` e `cor` (e `"ligado": false` para começar desligado).
 
 ## Testar no seu computador
 
@@ -95,10 +102,13 @@ Depois abra http://localhost:8000. Abrir o `index.html` direto (duplo clique) n�
 2. Envie todo o conteúdo desta pasta para a raiz do repositório, incluindo a pasta oculta `.github`.
 3. No repositório: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, escolha a branch `main` e a pasta `/ (root)`, e salve.
 4. Em um ou dois minutos o site fica em `https://SEU-USUARIO.github.io/lmapa/`.
-5. Baixe os dados uma vez: **Settings → Actions → General → Workflow permissions → Read and write permissions** e salve. Depois, na aba **Actions**, abra "Baixar dados" e clique em **Run workflow**. Em poucos minutos os arquivos de `data/` são criados e o site passa a mostrar todas as bases. Para atualizar os dados no futuro, basta rodar de novo.
+5. Baixe os dados uma vez: **Settings → Actions → General → Workflow permissions → Read and write permissions** e salve. Depois, na aba **Actions**, abra "Baixar dados" e clique em **Run workflow**. Leva de 10 a 30 minutos (os boletins de urna são grandes). Depois os arquivos de `data/` são criados e o site passa a mostrar todas as bases. Para atualizar os dados no futuro, basta rodar de novo.
 
 ## Limitações conhecidas
 
 - A localização por GPS só funciona em HTTPS (o GitHub Pages já usa) e depende da permissão do navegador.
 - O traçado pelas ruas usa o servidor público de rotas do projeto FOSSGIS (routing.openstreetmap.de), que é gratuito e sem garantia de disponibilidade. Quando não responde, a rota aparece em linha reta e o tempo é estimado a 4,8 km/h.
 - O GeoSampa não tem os CRAS como pontos (só as áreas de abrangência), por isso eles ficaram de fora.
+- A busca pelo nome procura nos locais já carregados (a área que você já viu no mapa). Para achar algo em outra cidade, aproxime o mapa dela antes.
+- Locais de votação sem coordenadas no cadastro do TSE ficam de fora do destaque eleitoral.
+- Links de rota criados antes desta versão não abrem mais as paradas, porque o formato dos identificadores mudou.

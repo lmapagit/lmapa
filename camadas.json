@@ -30,6 +30,12 @@
       "id": "cultura",
       "nome": "Cultura e lazer",
       "cor": "#7b4bb3"
+    },
+    {
+      "id": "religiao",
+      "nome": "Religião",
+      "cor": "#0e7c7b",
+      "ligado": false
     }
   ],
   "camadas": [
@@ -37,7 +43,6 @@
       "id": "hospitais",
       "nome": "Hospitais",
       "tema": "saude",
-      "arquivo": "data/hospitais.geojson",
       "simbolo": "H",
       "campos_popup": [
         {
@@ -55,31 +60,55 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_saude_hospital"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_saude_hospital",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "nm_esfera_administrativa_equipamento"
+      "pasta": "data/hospitais",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_saude_hospital",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "nm_esfera_administrativa_equipamento"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        },
+        {
+          "tipo": "cnes",
+          "rotulo": "CNES",
+          "fora_da_capital": true,
+          "tipos_unidade": [
+            5,
+            7,
+            62
+          ]
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "CNES (Ministério da Saúde)",
+          "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "ubs",
       "nome": "UBS e postos de saúde",
       "tema": "saude",
-      "arquivo": "data/ubs.geojson",
       "simbolo": "U",
       "campos_popup": [
         {
@@ -97,31 +126,54 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_saude_ubs_posto_centro"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_saude_ubs_posto_centro",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "nm_tipo_equipamento"
+      "pasta": "data/ubs",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_saude_ubs_posto_centro",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "nm_tipo_equipamento"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        },
+        {
+          "tipo": "cnes",
+          "rotulo": "CNES",
+          "fora_da_capital": true,
+          "tipos_unidade": [
+            1,
+            2
+          ]
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "CNES (Ministério da Saúde)",
+          "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "urgencia",
       "nome": "Pronto-socorros e AMA 24h",
       "tema": "saude",
-      "arquivo": "data/urgencia.geojson",
       "simbolo": "PS",
       "campos_popup": [
         {
@@ -139,31 +191,55 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_saude_urgencia_emergencia"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_saude_urgencia_emergencia",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "nm_tipo_equipamento"
+      "pasta": "data/urgencia",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_saude_urgencia_emergencia",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "nm_tipo_equipamento"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        },
+        {
+          "tipo": "cnes",
+          "rotulo": "CNES",
+          "fora_da_capital": true,
+          "tipos_unidade": [
+            20,
+            21,
+            73
+          ]
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "CNES (Ministério da Saúde)",
+          "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "ambulatorios",
       "nome": "AMAs e ambulatórios especializados",
       "tema": "saude",
-      "arquivo": "data/ambulatorios.geojson",
       "simbolo": "+",
       "campos_popup": [
         {
@@ -181,41 +257,68 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_saude_ambulatorios_especializados"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_saude_ambulatorios_especializados",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
+      "pasta": "data/ambulatorios",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_saude_ambulatorios_especializados",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "tipo_por_prefixo": {
+            "AMA": "AMA (Assistência Médica Ambulatorial)",
+            "AME": "AME (Ambulatório Médico de Especialidades)",
+            "AMB ESPEC": "Ambulatório de especialidades",
+            "CEO": "Centro de Especialidades Odontológicas",
+            "CER": "Centro Especializado em Reabilitação",
+            "URSI": "Referência à Saúde do Idoso",
+            "CR PICS": "Práticas Integrativas e Complementares",
+            "UNIDADE ODONTOL": "Unidade odontológica móvel",
+            "*": "Ambulatório especializado"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         },
-        "tipo_por_prefixo": {
-          "AMA": "AMA (Assistência Médica Ambulatorial)",
-          "AME": "AME (Ambulatório Médico de Especialidades)",
-          "AMB ESPEC": "Ambulatório de especialidades",
-          "CEO": "Centro de Especialidades Odontológicas",
-          "CER": "Centro Especializado em Reabilitação",
-          "URSI": "Referência à Saúde do Idoso",
-          "CR PICS": "Práticas Integrativas e Complementares",
-          "UNIDADE ODONTOL": "Unidade odontológica móvel",
-          "*": "Ambulatório especializado"
+        {
+          "tipo": "cnes",
+          "rotulo": "CNES",
+          "fora_da_capital": true,
+          "tipos_unidade": [
+            4,
+            36
+          ],
+          "so_publicos": [
+            4,
+            36
+          ]
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "CNES (Ministério da Saúde)",
+          "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "escolas_publicas",
       "nome": "Escolas públicas (fundamental e médio)",
       "tema": "educacao",
-      "arquivo": "data/escolas_publicas.geojson",
       "simbolo": "E",
       "campos_popup": [
         {
@@ -235,29 +338,35 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_educacao_rede_publica"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_educacao_rede_publica",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "tx_esfera_administrativa_equipamento"
+      "pasta": "data/escolas_publicas",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_educacao_rede_publica",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "tx_esfera_administrativa_equipamento"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "educacao_infantil",
       "nome": "Educação infantil (CEI, EMEI, creches)",
       "tema": "educacao",
-      "arquivo": "data/educacao_infantil.geojson",
       "simbolo": "EI",
       "campos_popup": [
         {
@@ -277,31 +386,37 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_educacao_infantil_rede_publica"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_educacao_infantil_rede_publica",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "tx_tipo_equipamento"
-        },
-        "ordenar_por": "cd_identificador",
-        "campo_id": "cd_identificador"
-      }
+      "pasta": "data/educacao_infantil",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_educacao_infantil_rede_publica",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "tx_tipo_equipamento"
+          },
+          "ordenar_por": "cd_identificador",
+          "campo_id": "cd_identificador",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "ensino_tecnico",
       "nome": "Escolas técnicas públicas (Etec)",
       "tema": "educacao",
-      "arquivo": "data/ensino_tecnico.geojson",
       "simbolo": "ET",
       "campos_popup": [
         {
@@ -317,28 +432,34 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_educacao_ensino_tecnico_rede_publica"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_educacao_ensino_tecnico_rede_publica",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
+      "pasta": "data/ensino_tecnico",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_educacao_ensino_tecnico_rede_publica",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "ceu",
       "nome": "CEUs",
       "tema": "educacao",
-      "arquivo": "data/ceu.geojson",
       "simbolo": "CEU",
       "campos_popup": [
         {
@@ -358,29 +479,84 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_educacao_ceu"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_educacao_ceu",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone",
-          "tipo": "nm_tipo_equipamento"
+      "pasta": "data/ceu",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_educacao_ceu",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone",
+            "tipo": "nm_tipo_equipamento"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
+    },
+    {
+      "id": "escolas_estado",
+      "nome": "Escolas, todas as redes (outros municípios)",
+      "tema": "educacao",
+      "simbolo": "E",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Etapa"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/escolas_estado",
+      "cobertura": "Estado, fora da capital",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "zoom_minimo": 11,
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "fora_da_capital": true,
+          "categorias": [
+            "preschool",
+            "elementary_school",
+            "middle_school",
+            "high_school"
+          ],
+          "confianca_minima": 0.6,
+          "rotulos": {
+            "preschool": "Educação infantil",
+            "elementary_school": "Ensino fundamental",
+            "middle_school": "Ensino fundamental",
+            "high_school": "Ensino médio"
+          }
+        }
+      ]
     },
     {
       "id": "escolas_privadas",
       "nome": "Escolas particulares",
       "tema": "educacao",
-      "arquivo": "data/escolas_privadas.geojson",
       "simbolo": "EP",
       "campos_popup": [
         {
@@ -396,30 +572,36 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_educacao_rede_privada"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_educacao_rede_privada",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
-        },
-        "ordenar_por": "cd_identificador",
-        "campo_id": "cd_identificador"
-      }
+      "pasta": "data/escolas_privadas",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_educacao_rede_privada",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "ordenar_por": "cd_identificador",
+          "campo_id": "cd_identificador",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "metro",
       "nome": "Estações de metrô",
       "tema": "transporte",
-      "arquivo": "data/metro.geojson",
       "simbolo": "M",
       "campos_popup": [
         {
@@ -427,91 +609,174 @@
           "rotulo": "Linhas"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:estacao_metro"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:estacao_metro",
-        "campos": {
-          "nome": "nm_estacao_metro_trem",
-          "linhas": "nm_linha_metro_trem"
-        },
-        "agrupar_por": "nome",
-        "lista": [
-          "linhas"
-        ]
-      }
+      "pasta": "data/metro",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:estacao_metro",
+          "campos": {
+            "nome": "nm_estacao_metro_trem",
+            "linhas": "nm_linha_metro_trem"
+          },
+          "agrupar_por": "nome",
+          "lista": [
+            "linhas"
+          ],
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "trem",
       "nome": "Estações de trem (CPTM)",
       "tema": "transporte",
-      "arquivo": "data/trem.geojson",
       "simbolo": "T",
       "campos_popup": [
         {
           "campo": "linhas",
           "rotulo": "Linhas"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:estacao_trem"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:estacao_trem",
-        "campos": {
-          "nome": "nm_estacao_metro_trem",
-          "linhas": "nm_linha_metro_trem"
+      "pasta": "data/trem",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:estacao_trem",
+          "campos": {
+            "nome": "nm_estacao_metro_trem",
+            "linhas": "nm_linha_metro_trem"
+          },
+          "agrupar_por": "nome",
+          "lista": [
+            "linhas"
+          ],
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         },
-        "agrupar_por": "nome",
-        "lista": [
-          "linhas"
-        ]
-      }
+        {
+          "tipo": "overture_infra",
+          "rotulo": "OpenStreetMap",
+          "fora_da_capital": true,
+          "classes": [
+            "railway_station",
+            "railway_halt",
+            "subway_station"
+          ],
+          "operador": "CPTM|Companhia Paulista de Trens|ViaMobilidade|Via Mobilidade|TIC|EMTU|BR Mobilidade|VLT|Metr"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "OpenStreetMap, via Overture Maps",
+          "url": "https://www.openstreetmap.org/copyright"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
+    },
+    {
+      "id": "terminais",
+      "nome": "Terminais e rodoviárias",
+      "tema": "transporte",
+      "simbolo": "T",
+      "campos_popup": [
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/terminais",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "OpenStreetMap, via Overture Maps",
+          "url": "https://www.openstreetmap.org/copyright"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_infra",
+          "rotulo": "OpenStreetMap",
+          "classes": [
+            "bus_station"
+          ]
+        }
+      ]
     },
     {
       "id": "pontos_onibus",
       "nome": "Pontos de ônibus",
       "tema": "transporte",
-      "arquivo": "data/pontos_onibus.geojson",
       "simbolo": "·",
       "campos_popup": [
         {
           "campo": "referencia",
           "rotulo": "Referência"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:ponto_onibus"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:ponto_onibus",
-        "campos": {
-          "nome": "nm_ponto_onibus",
-          "referencia": "tx_endereco_ponto_onibus"
+      "zoom_minimo": 15,
+      "pasta": "data/pontos_onibus",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:ponto_onibus",
+          "campos": {
+            "nome": "nm_ponto_onibus",
+            "referencia": "tx_endereco_ponto_onibus"
+          },
+          "ordenar_por": "cd_identificador_ponto_onibus",
+          "campo_id": "cd_identificador_ponto_onibus",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         },
-        "ordenar_por": "cd_identificador_ponto_onibus",
-        "campo_id": "cd_identificador_ponto_onibus"
-      },
-      "zoom_minimo": 15
+        {
+          "tipo": "overture_infra",
+          "rotulo": "OpenStreetMap",
+          "fora_da_capital": true,
+          "classes": [
+            "bus_stop"
+          ],
+          "nome_padrao": "Ponto de ônibus"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "OpenStreetMap, via Overture Maps",
+          "url": "https://www.openstreetmap.org/copyright"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "bom_prato",
       "nome": "Restaurantes Bom Prato",
       "tema": "servicos",
-      "arquivo": "data/bom_prato.geojson",
       "simbolo": "BP",
       "campos_popup": [
         {
@@ -527,29 +792,35 @@
           "rotulo": "Gestão"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_bom_prato"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_bom_prato",
-        "campos": {
-          "nome": "nm_bairro_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "esfera": "nm_esfera_administrativa_equipamento"
-        },
-        "prefixo_nome": "Bom Prato "
-      }
+      "pasta": "data/bom_prato",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_bom_prato",
+          "campos": {
+            "nome": "nm_bairro_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "esfera": "nm_esfera_administrativa_equipamento"
+          },
+          "prefixo_nome": "Bom Prato ",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "descomplica",
       "nome": "Descomplica SP",
       "tema": "servicos",
-      "arquivo": "data/descomplica.geojson",
       "simbolo": "D",
       "campos_popup": [
         {
@@ -565,29 +836,35 @@
           "rotulo": "Serviços"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:descomplica"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:descomplica",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "nm_endereco",
-          "horario": "tx_horario_funcionamento",
-          "servicos": "tx_servico"
-        },
-        "prefixo_nome": "Descomplica SP "
-      }
+      "pasta": "data/descomplica",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:descomplica",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "nm_endereco",
+            "horario": "tx_horario_funcionamento",
+            "servicos": "tx_servico"
+          },
+          "prefixo_nome": "Descomplica SP ",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
     },
     {
       "id": "feiras",
       "nome": "Feiras livres",
       "tema": "servicos",
-      "arquivo": "data/feiras.geojson",
       "simbolo": "F",
       "campos_popup": [
         {
@@ -597,30 +874,54 @@
         {
           "campo": "endereco",
           "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_feira_livre"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_feira_livre",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "dia": "tx_dia_funcionamento"
+      "pasta": "data/feiras",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_feira_livre",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "dia": "tx_dia_funcionamento"
+          },
+          "prefixo_nome": "Feira ",
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         },
-        "prefixo_nome": "Feira "
-      }
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "fora_da_capital": true,
+          "categorias": [
+            "farmers_market"
+          ],
+          "confianca_minima": 0.6,
+          "nome_contem": "feira"
+        }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "bibliotecas",
       "nome": "Bibliotecas públicas",
       "tema": "cultura",
-      "arquivo": "data/bibliotecas.geojson",
       "simbolo": "B",
       "campos_popup": [
         {
@@ -634,30 +935,53 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_cultura_bibliotecas"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_cultura_bibliotecas",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
+      "pasta": "data/bibliotecas",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_cultura_bibliotecas",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        },
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "fora_da_capital": true,
+          "categorias": [
+            "library"
+          ],
+          "confianca_minima": 0.6
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "espacos_culturais",
       "nome": "Centros culturais",
       "tema": "cultura",
-      "arquivo": "data/espacos_culturais.geojson",
       "simbolo": "C",
       "campos_popup": [
         {
@@ -671,30 +995,62 @@
         {
           "campo": "telefone",
           "rotulo": "Telefone"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_cultura_espacos_culturais"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_cultura_espacos_culturais",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
+      "pasta": "data/espacos_culturais",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_cultura_espacos_culturais",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
+        },
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "fora_da_capital": true,
+          "categorias": [
+            "cultural_center",
+            "museum",
+            "theatre_venue",
+            "performing_arts_venue"
+          ],
+          "confianca_minima": 0.7,
+          "rotulos": {
+            "cultural_center": "Centro cultural",
+            "museum": "Museu",
+            "theatre_venue": "Teatro",
+            "performing_arts_venue": "Casa de espetáculos"
+          }
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        },
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "cobertura": "Estado (capital: GeoSampa)"
     },
     {
       "id": "centros_esportivos",
       "nome": "Centros esportivos",
       "tema": "cultura",
-      "arquivo": "data/centros_esportivos.geojson",
       "simbolo": "CE",
       "campos_popup": [
         {
@@ -710,22 +1066,343 @@
           "rotulo": "Telefone"
         }
       ],
-      "fonte": {
-        "nome": "GeoSampa (Prefeitura de São Paulo)",
-        "url": "https://geosampa.prefeitura.sp.gov.br/",
-        "camada": "geoportal:equipamento_esporte_centro_esportivo"
-      },
-      "atualizacao": {
-        "tipo": "wfs",
-        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
-        "typeName": "geoportal:equipamento_esporte_centro_esportivo",
-        "campos": {
-          "nome": "nm_equipamento",
-          "endereco": "tx_endereco_equipamento",
-          "bairro": "nm_bairro_equipamento",
-          "telefone": "tx_numero_telefone"
+      "pasta": "data/centros_esportivos",
+      "fontes": [
+        {
+          "tipo": "wfs",
+          "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+          "typeName": "geoportal:equipamento_esporte_centro_esportivo",
+          "campos": {
+            "nome": "nm_equipamento",
+            "endereco": "tx_endereco_equipamento",
+            "bairro": "nm_bairro_equipamento",
+            "telefone": "tx_numero_telefone"
+          },
+          "rotulo": "GeoSampa",
+          "municipio": "São Paulo"
         }
-      }
+      ],
+      "creditos": [
+        {
+          "nome": "GeoSampa (Prefeitura de São Paulo)",
+          "url": "https://geosampa.prefeitura.sp.gov.br/"
+        }
+      ],
+      "cobertura": "Cidade de São Paulo"
+    },
+    {
+      "id": "religiao_catolica",
+      "nome": "Católica",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_catolica",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "catolica"
+        }
+      ]
+    },
+    {
+      "id": "religiao_evangelica",
+      "nome": "Evangélica",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_evangelica",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "evangelica"
+        }
+      ],
+      "zoom_minimo": 12
+    },
+    {
+      "id": "religiao_espirita",
+      "nome": "Espírita",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_espirita",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "espirita"
+        }
+      ]
+    },
+    {
+      "id": "religiao_matriz_africana",
+      "nome": "Matriz africana (umbanda, candomblé)",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_matriz_africana",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "matriz_africana"
+        }
+      ]
+    },
+    {
+      "id": "religiao_outras",
+      "nome": "Outras confissões (judaica, islâmica, budista, Testemunhas de Jeová…)",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_outras",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "outras"
+        }
+      ]
+    },
+    {
+      "id": "religiao_crista_outras",
+      "nome": "Cristã, sem confissão identificada",
+      "tema": "religiao",
+      "simbolo": "†",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "municipio",
+          "rotulo": "Município"
+        }
+      ],
+      "pasta": "data/religiao_crista_outras",
+      "cobertura": "Estado",
+      "creditos": [
+        {
+          "nome": "Overture Maps",
+          "url": "https://overturemaps.org/"
+        }
+      ],
+      "fontes": [
+        {
+          "tipo": "overture_lugares",
+          "rotulo": "Overture Maps",
+          "categorias": [
+            "christian_place_of_worship",
+            "religious_organization",
+            "place_of_worship",
+            "buddhist_place_of_worship",
+            "jewish_place_of_worship",
+            "muslim_place_of_worship",
+            "hindu_place_of_worship"
+          ],
+          "confianca_minima": 0.6,
+          "confissao": "crista_outras"
+        }
+      ],
+      "zoom_minimo": 12
+    }
+  ],
+  "regiao": {
+    "nome": "Estado de São Paulo",
+    "uf_ibge": "35",
+    "capital_ibge": "3550308",
+    "municipios": "data/municipios.geojson"
+  },
+  "eleitoral": {
+    "arquivo": "data/eleitoral/locais.json",
+    "uf": "SP",
+    "turno": 1,
+    "cargo": 1,
+    "descricao": "Eleição presidencial de 2026, 1º turno",
+    "locais_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/eleitorado_locais_votacao/eleitorado_local_votacao_2026.zip",
+    "pacote_boletins": "resultados-2026-boletim-de-urna",
+    "boletins_url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2026/buweb/bweb_1t_SP_051020261403.zip",
+    "candidatos": [],
+    "fonte": {
+      "nome": "TSE: boletins de urna e locais de votação",
+      "url": "https://dadosabertos.tse.jus.br/"
+    }
+  },
+  "confissoes": [
+    {
+      "id": "matriz_africana",
+      "nome": "umbanda|candombl|terreiro|\\bil[eê]\\b|\\bax[eé]\\b|orix[aá]|quimbanda|tenda esp[ií]rita de umbanda|caboclo"
+    },
+    {
+      "id": "espirita",
+      "nome": "esp[ií]rit(a|as|ismo)\\b|kardec"
+    },
+    {
+      "id": "outras",
+      "nome": "sal[aã]o do reino|testemunhas de jeov|sinagoga|judaic|chabad|mesquita|isl[aâ]m|mu[cç]ulman|budis|templo zu|seicho|messi[aâ]nica|perfect liberty|tenrikyo|hare krishna|santos dos [uú]ltimos dias|m[oó]rmon|ortodox",
+      "categorias": [
+        "jewish_place_of_worship",
+        "muslim_place_of_worship",
+        "buddhist_place_of_worship",
+        "hindu_place_of_worship",
+        "jehovahs_witness_place_of_worship"
+      ]
+    },
+    {
+      "id": "catolica",
+      "nome": "par[oó]quia|cat[oó]lic|capela|matriz|santu[aá]rio|catedral|diocese|arquidiocese|mosteiro|convento|nossa senhora|bas[ií]lica|(igreja|comunidade) (de )?(s[aã]o|sant[ao]|nossa|divino|sagrad|imaculad|bom jesus)|irmandade|divino esp[ií]rito santo",
+      "categorias": [
+        "roman_catholic_place_of_worship"
+      ]
+    },
+    {
+      "id": "evangelica",
+      "nome": "evang|assembl[eé]ia de deus|congrega[cç][aã]o crist|universal do reino|batista|presbiterian|metodista|adventista|quadrangular|deus [eé] amor|mundial do poder|renascer|bola de neve|luteran|sara nossa terra|videira|apost[oó]lica|pentecost|maranata|internacional da gra[cç]a|igreja crist|minist[eé]rio|anglican|\\bIEQ\\b|\\bCCB\\b|^AD\\b|\\bADMA?\\b|universal|igreja internacional|casa de ora[cç][aã]o|congregacional|b[ií]blica|gospel|avivamento|nazareno",
+      "categorias": [
+        "protestant_place_of_worship",
+        "pentecostal_place_of_worship",
+        "baptist_place_of_worship",
+        "anglican_or_episcopal_place_of_worship"
+      ]
+    },
+    {
+      "id": "crista_outras",
+      "categorias": [
+        "christian_place_of_worship",
+        "place_of_worship"
+      ]
     }
   ]
 }

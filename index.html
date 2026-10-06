@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="estilo.css">
+<link rel="stylesheet" href="estilo.css?v=3">
 </head>
 <body>
 <div class="app">
@@ -28,7 +28,7 @@
 
     <section class="secao" id="sec-filtros" role="tabpanel" aria-labelledby="aba-filtros">
       <label class="rotulo" for="busca">Buscar pelo nome</label>
-      <input id="busca" type="search" placeholder="Ex.: Sé, AMA, Bom Prato" autocomplete="off">
+      <input id="busca" type="search" placeholder="Ex.: Sé, UBS, rodoviária" autocomplete="off">
       <ul class="resultados" id="resultados-busca" hidden></ul>
 
       <h2 class="rotulo">Temas</h2>
@@ -39,6 +39,46 @@
         <button class="botao mini-texto" id="btn-todas" type="button">Desmarcar todas</button>
       </div>
       <ul class="camadas" id="camadas"></ul>
+
+      <div class="caixa-eleitoral" id="caixa-eleitoral" hidden>
+        <h2 class="rotulo">Destaque eleitoral</h2>
+        <label class="alternar" for="eleitoral-ligar">
+          <input type="checkbox" id="eleitoral-ligar">
+          Destacar locais perto de seções eleitorais com mais eleitores que não votaram nos dois principais candidatos
+        </label>
+        <div class="eleitoral-opcoes" id="eleitoral-opcoes" hidden>
+          <p class="aviso" id="eleitoral-explica"></p>
+          <label>Medir por
+            <select id="eleitoral-medida">
+              <option value="abs" selected>número de eleitores</option>
+              <option value="pct">percentual do eleitorado do local</option>
+            </select>
+          </label>
+          <label>Destacar os locais de votação
+            <select id="eleitoral-corte">
+              <option value="10">10% mais altos</option>
+              <option value="20" selected>20% mais altos</option>
+              <option value="30">30% mais altos</option>
+            </select>
+          </label>
+          <label>Comparando com
+            <select id="eleitoral-comparar">
+              <option value="estado" selected>todo o estado</option>
+              <option value="municipio">o mesmo município</option>
+            </select>
+          </label>
+          <label>Distância máxima até o local de votação
+            <select id="eleitoral-raio">
+              <option value="300">300 m</option>
+              <option value="500" selected>500 m</option>
+              <option value="1000">1 km</option>
+            </select>
+          </label>
+          <label class="alternar" for="eleitoral-locais"><input type="checkbox" id="eleitoral-locais" checked> Mostrar os locais de votação destacados</label>
+          <label class="alternar" for="eleitoral-esconder"><input type="checkbox" id="eleitoral-esconder"> Esconder os locais que não estão perto deles</label>
+          <p class="aviso" id="eleitoral-resumo" role="status"></p>
+        </div>
+      </div>
     </section>
 
     <section class="secao" id="sec-perto" role="tabpanel" aria-labelledby="aba-perto" hidden>
@@ -82,10 +122,11 @@
   <main class="mapa-area">
     <div id="mapa" aria-label="Mapa"></div>
     <p class="faixa" id="faixa" hidden></p>
+    <p class="carregando" id="carregando" hidden>Carregando locais da área…</p>
   </main>
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
