@@ -292,6 +292,7 @@
         onclick: () => {
           ativo ? estado.temasAtivos.delete(t.id) : estado.temasAtivos.add(t.id);
           desenharTemas();
+          desenharCamadas();
           atualizarVisibilidade();
         },
       }, el('span', { class: 'ponto' }), t.nome, el('span', { class: 'qtd' }, qtd ? String(qtd) : 'em breve')));
@@ -299,21 +300,22 @@
   }
 
   // Botão que marca ou desmarca todas as bases de uma vez
+  // A lista de bases mostra só as dos temas ligados; o botão age sobre elas
+  const camadasListadas = () => estado.camadas.filter((c) => estado.temasAtivos.has(c.tema));
+
   function desenharBotaoTodas() {
-    const todas = estado.camadas.every((c) => estado.camadasAtivas.has(c.id));
+    const listadas = camadasListadas();
+    const todas = listadas.every((c) => estado.camadasAtivas.has(c.id));
     const btn = $('btn-todas');
+    btn.hidden = !listadas.length;
     btn.textContent = todas ? 'Desmarcar todas' : 'Marcar todas';
     btn.setAttribute('aria-pressed', String(todas));
   }
 
   $('btn-todas').addEventListener('click', () => {
-    const todas = estado.camadas.every((c) => estado.camadasAtivas.has(c.id));
-    estado.camadasAtivas.clear();
-    if (!todas) {
-      estado.camadas.forEach((c) => estado.camadasAtivas.add(c.id));
-      estado.temas.forEach((t) => estado.temasAtivos.add(t.id));
-    }
-    desenharTemas();
+    const listadas = camadasListadas();
+    const todas = listadas.every((c) => estado.camadasAtivas.has(c.id));
+    listadas.forEach((c) => (todas ? estado.camadasAtivas.delete(c.id) : estado.camadasAtivas.add(c.id)));
     desenharCamadas();
     atualizarVisibilidade();
   });
@@ -322,7 +324,8 @@
     desenharBotaoTodas();
     const lista = $('camadas');
     lista.replaceChildren();
-    for (const c of estado.camadas) {
+    if (!camadasListadas().length) lista.append(el('li', { class: 'aviso' }, 'Ligue um tema acima para ver as bases dele.'));
+    for (const c of camadasListadas()) {
       const id = `camada-${c.id}`;
       const data = c._atualizado ? ` · atualizado em ${c._atualizado.split('-').reverse().join('/')}` : '';
       const qtd = c._pendente ? 'aguardando a primeira atualização' : `${c._qtd.toLocaleString('pt-BR')} locais`;
