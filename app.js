@@ -320,28 +320,61 @@
     atualizarVisibilidade();
   });
 
+  // Bases agrupadas por tema; a caixa do tema marca ou desmarca todas as bases dele
+  const temasRecolhidos = new Set();
   function desenharCamadas() {
     desenharBotaoTodas();
     const lista = $('camadas');
     lista.replaceChildren();
     if (!camadasListadas().length) lista.append(el('li', { class: 'aviso' }, 'Ligue um tema acima para ver as bases dele.'));
-    for (const c of camadasListadas()) {
-      const id = `camada-${c.id}`;
-      const data = c._atualizado ? ` · atualizado em ${c._atualizado.split('-').reverse().join('/')}` : '';
-      const qtd = c._pendente ? 'aguardando a primeira atualização' : `${c._qtd.toLocaleString('pt-BR')} locais`;
-      const zoom = c.zoom_minimo ? ' · aparece ao aproximar o mapa' : '';
-      const cobertura = c.cobertura ? `${c.cobertura} · ` : '';
-      const creditos = (c.creditos || []).flatMap((f, i) => [i ? ', ' : '',
-        f.url ? el('a', { href: f.url, target: '_blank', rel: 'noopener' }, f.nome) : f.nome]);
-      lista.append(el('li', { class: 'camada', style: `--cor:${estado.temas.get(c.tema)?.cor}` },
-        el('input', {
-          type: 'checkbox', id, checked: estado.camadasAtivas.has(c.id) ? 'checked' : false,
-          onchange: (e) => { e.target.checked ? estado.camadasAtivas.add(c.id) : estado.camadasAtivas.delete(c.id); desenharBotaoTodas(); atualizarVisibilidade(); },
-        }),
-        el('label', { for: id }, c.nome),
-        el('span', { class: 'meta' }, `${cobertura}${qtd}${data}${zoom} · `, ...creditos),
-      ));
+    for (const t of estado.temas.values()) {
+      const doTema = camadasListadas().filter((c) => c.tema === t.id);
+      if (!doTema.length) continue;
+      const marcadas = doTema.filter((c) => estado.camadasAtivas.has(c.id)).length;
+      const recolhido = temasRecolhidos.has(t.id);
+      const caixa = el('input', {
+        type: 'checkbox', id: `grupo-${t.id}`, checked: marcadas === doTema.length ? 'checked' : false,
+        'aria-label': `Marcar ou desmarcar todas as bases de ${t.nome}`,
+        onchange: (e) => {
+          doTema.forEach((c) => (e.target.checked ? estado.camadasAtivas.add(c.id) : estado.camadasAtivas.delete(c.id)));
+          desenharCamadas();
+          atualizarVisibilidade();
+        },
+      });
+      caixa.indeterminate = marcadas > 0 && marcadas < doTema.length;
+      const corpo = el('ul', { class: 'camadas-tema', hidden: recolhido ? 'hidden' : false });
+      lista.append(el('li', { class: 'grupo-tema', style: `--cor:${t.cor}` },
+        el('div', { class: 'cabeca-tema' },
+          caixa,
+          el('label', { for: `grupo-${t.id}` }, t.nome),
+          el('span', { class: 'qtd-tema' }, `${marcadas} de ${doTema.length}`),
+          el('button', {
+            class: 'recolher', type: 'button', 'aria-expanded': String(!recolhido),
+            'aria-label': `${recolhido ? 'Mostrar' : 'Recolher'} as bases de ${t.nome}`,
+            onclick: () => { recolhido ? temasRecolhidos.delete(t.id) : temasRecolhidos.add(t.id); desenharCamadas(); },
+          }, recolhido ? '▸' : '▾'),
+        ),
+        corpo));
+      for (const c of doTema) corpo.append(itemCamada(c));
     }
+  }
+
+  function itemCamada(c) {
+    const id = `camada-${c.id}`;
+    const data = c._atualizado ? ` · atualizado em ${c._atualizado.split('-').reverse().join('/')}` : '';
+    const qtd = c._pendente ? 'aguardando a primeira atualização' : `${c._qtd.toLocaleString('pt-BR')} locais`;
+    const zoom = c.zoom_minimo ? ' · aparece ao aproximar o mapa' : '';
+    const cobertura = c.cobertura ? `${c.cobertura} · ` : '';
+    const creditos = (c.creditos || []).flatMap((f, i) => [i ? ', ' : '',
+      f.url ? el('a', { href: f.url, target: '_blank', rel: 'noopener' }, f.nome) : f.nome]);
+    return el('li', { class: 'camada', style: `--cor:${estado.temas.get(c.tema)?.cor}` },
+      el('input', {
+        type: 'checkbox', id, checked: estado.camadasAtivas.has(c.id) ? 'checked' : false,
+        onchange: (e) => { e.target.checked ? estado.camadasAtivas.add(c.id) : estado.camadasAtivas.delete(c.id); desenharCamadas(); atualizarVisibilidade(); },
+      }),
+      el('label', { for: id }, c.nome),
+      el('span', { class: 'meta' }, `${cobertura}${qtd}${data}${zoom} · `, ...creditos),
+    );
   }
 
   const visivel = (p) => estado.camadasAtivas.has(p.camada.id) && estado.temasAtivos.has(p.camada.tema);
@@ -530,9 +563,8 @@
       for (const l of eleitoral.dados.locais) {
         if (!l.destacado && eleitoral.mostrarLocais === 'destacados') continue;
         new Quadrado(l.latlng, {
-          renderer: rendLocais, interactive: false, radius: 3.5, weight: 1.2,
-          color: l.destacado ? COR_DESTAQUE : cinza, opacity: 0.75,
-          fill: l.destacado, fillColor: COR_DESTAQUE, fillOpacity: 0.3,
+          renderer: rendLocais, interactive: false, radius: 2.5, weight: 1,
+          color: l.destacado ? COR_DESTAQUE : cinza, opacity: l.destacado ? 0.6 : 0.35, fill: false,
         }).addTo(camadaLocais);
       }
       camadaLocais.addTo(mapa);
