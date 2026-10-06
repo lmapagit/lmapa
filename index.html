@@ -74,8 +74,21 @@
               <option value="1000">1 km</option>
             </select>
           </label>
-          <label class="alternar" for="eleitoral-locais"><input type="checkbox" id="eleitoral-locais" checked> Mostrar os locais de votação destacados</label>
+          <label>Locais de votação no mapa (só referência, sem clique)
+            <select id="eleitoral-locais">
+              <option value="destacados" selected>só os destacados</option>
+              <option value="todos">todos</option>
+              <option value="nenhum">nenhum</option>
+            </select>
+          </label>
           <label class="alternar" for="eleitoral-esconder"><input type="checkbox" id="eleitoral-esconder"> Esconder os locais que não estão perto deles</label>
+          <ul class="legenda-eleitoral" aria-label="Legenda do destaque eleitoral">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="#8a94a6" stroke="#ff7a1a" stroke-width="4"/></svg> Abriga um local de votação destacado</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="#8a94a6" stroke="#111827" stroke-width="4"/></svg> Abriga seções eleitorais</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="#8a94a6" stroke="#ff7a1a" stroke-width="3"/></svg> Perto de um local de votação destacado</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#8a94a6" fill-opacity=".3" stroke="#8a94a6" stroke-opacity=".4"/></svg> Demais locais</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="8" height="8" fill="#ff7a1a" fill-opacity=".3" stroke="#ff7a1a" stroke-width="1.5"/></svg> Local de votação (referência)</li>
+          </ul>
           <p class="aviso" id="eleitoral-resumo" role="status"></p>
         </div>
       </div>

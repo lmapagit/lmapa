@@ -367,6 +367,7 @@
   // que não votaram em nenhum dos dois principais candidatos (abstenções, brancos, nulos
   // e votos nos demais candidatos). Liga e desliga no painel; os dados vêm do TSE.
   const COR_DESTAQUE = '#ff7a1a';
+  const COR_ABRIGA = '#111827';
   const eleitoral = {
     ligado: false,
     dados: null,          // {metadata, locais:[...]}
@@ -376,12 +377,36 @@
     corte: 20,
     raio: 500,
     comparar: 'estado',
-    mostrarLocais: true,
+    mostrarLocais: 'destacados',   // destacados | todos | nenhum
     esconder: false,
   };
   mapa.createPane('eleitoral').style.zIndex = 390;   // abaixo dos pontos das bases
   const camadaLocais = L.layerGroup();
-  const rendLocais = L.canvas({ pane: 'eleitoral', tolerance: TOQUE ? 10 : 3 });
+  const rendLocais = L.canvas({ pane: 'eleitoral' });
+  // Locais de votação são só referência: quadradinhos sem clique, para não se confundirem
+  // com os pontos das bases (círculos clicáveis)
+  const Quadrado = L.CircleMarker.extend({
+    _updatePath() {
+      const r = this._renderer;
+      if (!r._drawing || this._empty()) return;
+      const p = this._point, t = this._radius, ctx = r._ctx;
+      ctx.beginPath();
+      ctx.rect(p.x - t, p.y - t, t * 2, t * 2);
+      r._fillStroke(ctx, this);
+    },
+  });
+
+  // Palavras comuns em nomes de escolas e prédios, ignoradas ao comparar nomes
+  const PALAVRAS_COMUNS = new Set(('escola estadual municipal emef emei emeb ee e.e eeb cemei cei creche prof professor professora '
+    + 'profa dr doutor dona de da do das dos e colegio centro educacional educacao infantil fundamental medio ensino unidade '
+    + 'basica ubs etec fatec faculdade universidade instituto igreja paroquia').split(' '));
+  const palavras = (texto) => new Set(normalizar(texto || '').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/)
+    .filter((w) => w.length > 2 && !PALAVRAS_COMUNS.has(w)));
+  function nomesParecidos(a, b) {
+    let comuns = 0;
+    for (const w of a) if (b.has(w)) comuns++;
+    return comuns >= 2 || (comuns === 1 && Math.min(a.size, b.size) === 1);
+  }
   const fmtN = (n) => Math.round(n).toLocaleString('pt-BR');
   const fmtPct = (x) => `${(x * 100).toFixed(0)}%`;
   const celula = (lat, lng) => `${Math.floor(lat * 100)}_${Math.floor(lng * 100)}`;
@@ -414,7 +439,7 @@
     ligarSelect('eleitoral-corte', 'corte', Number);
     ligarSelect('eleitoral-raio', 'raio', Number);
     ligarSelect('eleitoral-comparar', 'comparar');
-    $('eleitoral-locais').addEventListener('change', (e) => { eleitoral.mostrarLocais = e.target.checked; recalcularEleitoral(); });
+    $('eleitoral-locais').addEventListener('change', (e) => { eleitoral.mostrarLocais = e.target.value; recalcularEleitoral(); });
     $('eleitoral-esconder').addEventListener('change', (e) => { eleitoral.esconder = e.target.checked; recalcularEleitoral(); });
   }
 
@@ -460,8 +485,12 @@
     return total;
   }
 
-  // Local de votação mais próximo (até 2 km) e destacado mais próximo dentro do raio
-  function vizinhosEleitorais(latlng) {
+  // Local de votação mais próximo (até 2 km), destacado mais próximo dentro do raio e
+  // o local de votação que funciona no próprio ponto (muito perto, ou perto e com nome parecido)
+  function vizinhosEleitorais(p) {
+    const latlng = p.latlng;
+    p._palavras ||= palavras(p.nome);
+    let abriga = null, dAbriga = Infinity;
     const alcance = 2000;
     const passos = Math.ceil(alcance / 1100) + 1;
     const cy = Math.floor(latlng.lat * 100), cx = Math.floor(latlng.lng * 100);
@@ -472,14 +501,18 @@
           const d = latlng.distanceTo(l.latlng);
           if (d < dPerto && d <= alcance) { perto = l; dPerto = d; }
           if (l.destacado && d < dQuente && d <= eleitoral.raio) { quente = l; dQuente = d; }
+          if (d < dAbriga && (d <= 25 || (d <= 200 && nomesParecidos(p._palavras, l._palavras ||= palavras(l.nome))))) { abriga = l; dAbriga = d; }
         }
       }
     }
-    return { perto, dPerto, quente, dQuente };
+    return { perto, dPerto, quente, dQuente, abriga };
   }
 
   function estiloPonto(p) {
     if (!eleitoral.ligado || !eleitoral.dados || !p._eleitoral) return estiloBase(p);
+    const { abriga } = p._eleitoral;
+    // Destaque especial: o próprio local abriga seções eleitorais
+    if (abriga) return { radius: RAIO_PONTO + 4, color: abriga.destacado ? COR_DESTAQUE : COR_ABRIGA, weight: 5, opacity: 1, fillColor: p.cor, fillOpacity: 1 };
     if (p._eleitoral.quente) return { radius: RAIO_PONTO + 2, color: COR_DESTAQUE, weight: 4, opacity: 1, fillColor: p.cor, fillOpacity: 1 };
     return { radius: RAIO_PONTO - 1, color: '#ffffff', weight: 1, opacity: 0.35, fillColor: p.cor, fillOpacity: 0.25 };
   }
@@ -489,12 +522,15 @@
     if (ativo) eleitoral.destacados = marcarDestacados();
     for (const p of estado.pontos.values()) if (p._eleitoral) p._eleitoral = null;
     camadaLocais.clearLayers();
-    if (ativo && eleitoral.mostrarLocais) {
+    if (ativo && eleitoral.mostrarLocais !== 'nenhum') {
+      const cinza = getComputedStyle(document.documentElement).getPropertyValue('--tinta-suave').trim();
       for (const l of eleitoral.dados.locais) {
-        if (!l.destacado) continue;
-        L.circleMarker(l.latlng, { renderer: rendLocais, radius: TOQUE ? 6 : 5, color: '#5c2400', weight: 1.5, fillColor: COR_DESTAQUE, fillOpacity: 0.9 })
-          .bindPopup(() => popupLocal(l), { maxWidth: 300 })
-          .addTo(camadaLocais);
+        if (!l.destacado && eleitoral.mostrarLocais === 'destacados') continue;
+        new Quadrado(l.latlng, {
+          renderer: rendLocais, interactive: false, radius: 3.5, weight: 1.2,
+          color: l.destacado ? COR_DESTAQUE : cinza, opacity: 0.75,
+          fill: l.destacado, fillColor: COR_DESTAQUE, fillOpacity: 0.3,
+        }).addTo(camadaLocais);
       }
       camadaLocais.addTo(mapa);
     } else if (mapa.hasLayer(camadaLocais)) mapa.removeLayer(camadaLocais);
@@ -506,7 +542,7 @@
     const ativo = eleitoral.ligado && eleitoral.dados;
     if (!ativo && !eleitoralAplicado) return;
     eleitoralAplicado = Boolean(ativo);
-    let perto = 0;
+    let perto = 0, abrigam = 0;
     for (const p of estado.pontos.values()) {
       const grupo = estado.grupos.get(p.camada.id);
       if (!ativo) {
@@ -514,21 +550,23 @@
         if (!grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
         continue;
       }
-      if (!p._eleitoral) p._eleitoral = vizinhosEleitorais(p.latlng);
+      if (!p._eleitoral) p._eleitoral = vizinhosEleitorais(p);
       p.marcador.setStyle(estiloPonto(p));
-      const mostrar = !eleitoral.esconder || p._eleitoral.quente;
+      const mostrar = !eleitoral.esconder || p._eleitoral.quente || p._eleitoral.abriga;
       if (mostrar && !grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
       if (!mostrar && grupo.hasLayer(p.marcador)) grupo.removeLayer(p.marcador);
-      if (p._eleitoral.quente) {
+      if (p._eleitoral.quente || p._eleitoral.abriga) {
         if (visivel(p) && mapa.hasLayer(grupo)) p.marcador.bringToFront();
-        if (visivel(p)) perto++;
+        if (visivel(p) && p._eleitoral.quente) perto++;
+        if (visivel(p) && p._eleitoral.abriga) abrigam++;
       }
     }
     if (!ativo) return;
     const base = eleitoral.comparar === 'municipio' ? 'em cada município' : 'no estado';
     const simulado = eleitoral.dados.metadata.simulado ? ' Atenção: dados simulados, só para testar o funcionamento.' : '';
     $('eleitoral-resumo').textContent = `${fmtN(eleitoral.destacados)} locais de votação destacados (os ${eleitoral.corte}% mais altos ${base}). `
-      + `${fmtN(perto)} locais das bases ligadas, já carregados no mapa, ficam a até ${formatarDist(eleitoral.raio)} de um deles.${simulado}`;
+      + `${fmtN(perto)} locais das bases ligadas, já carregados no mapa, ficam a até ${formatarDist(eleitoral.raio)} de um deles, `
+      + `e ${fmtN(abrigam)} abrigam seções eleitorais.${simulado}`;
   }
 
   function linhaFora(l) {
@@ -536,29 +574,32 @@
     return `${fmtN(l.fora)} de ${fmtN(l.aptos)} eleitores (${fmtPct(l.pct)}) não votaram em ${a} nem em ${b}`;
   }
 
-  function popupLocal(l) {
+  function detalhesLocal(l) {
     const [a, b] = nomesCandidatos();
     const campos = el('dl', { class: 'popup-campos' });
-    const linhas = [['Município', l.municipio], ['Endereço', l.endereco], ['Eleitores aptos', fmtN(l.aptos)],
-      ['Abstenções', fmtN(l.abstencoes)], ['Brancos', fmtN(l.brancos)], ['Nulos', fmtN(l.nulos)],
-      ['Demais candidatos', fmtN(l.outros)], [a, fmtN(l.c1)], [b, fmtN(l.c2)]];
-    for (const [r, v] of linhas) if (v) campos.append(el('dt', {}, r), el('dd', {}, String(v)));
-    return el('div', { style: `--cor:${COR_DESTAQUE}` },
-      el('span', { class: 'popup-tema' }, 'Local de votação destacado'),
-      el('p', { class: 'popup-nome' }, l.nome),
-      el('p', { class: 'popup-eleitoral' }, linhaFora(l)),
-      campos,
-      el('p', { class: 'popup-fonte' }, eleitoral.dados.metadata.fonte));
+    const linhas = [['Eleitores aptos', fmtN(l.aptos)], ['Abstenções', fmtN(l.abstencoes)], ['Brancos', fmtN(l.brancos)],
+      ['Nulos', fmtN(l.nulos)], ['Demais candidatos', fmtN(l.outros)], [a, fmtN(l.c1)], [b, fmtN(l.c2)]];
+    for (const [r, v] of linhas) campos.append(el('dt', {}, r), el('dd', {}, String(v)));
+    return campos;
   }
 
   function blocoEleitoral(p) {
     if (!eleitoral.ligado || !eleitoral.dados) return null;
-    const v = p._eleitoral || vizinhosEleitorais(p.latlng);
+    const v = p._eleitoral || vizinhosEleitorais(p);
+    if (v.abriga) {
+      const l = v.abriga;
+      return el('div', { class: 'popup-eleitoral' },
+        el('strong', { class: `selo-destaque ${l.destacado ? '' : 'selo-abriga'}` },
+          l.destacado ? 'Abriga um local de votação destacado' : 'Abriga seções eleitorais'),
+        el('span', {}, `Local de votação: ${l.nome}. ${linhaFora(l)}.`),
+        detalhesLocal(l));
+    }
     if (!v.perto) return el('p', { class: 'popup-eleitoral' }, 'Nenhum local de votação a até 2 km.');
     return el('div', { class: 'popup-eleitoral' },
       v.quente ? el('strong', { class: 'selo-destaque' }, `A ${formatarDist(v.dQuente)} de um local de votação destacado`) : null,
       el('span', {}, `Local de votação mais próximo: ${v.perto.nome}, a ${formatarDist(v.dPerto)}. ${linhaFora(v.perto)}.`));
   }
+
 
   // ---------- Busca ----------
   $('busca').addEventListener('input', (e) => {
@@ -1117,7 +1158,7 @@
     }
     // Rodapé com fontes
     ctx.textAlign = 'left'; ctx.fillStyle = SUAVE; ctx.font = `400 17px ${fTexto}`;
-    const fontes = [...new Set(pts.map((p) => p.camada.fonte?.nome).filter(Boolean))].join(', ');
+    const fontes = [...new Set(pts.map((p) => p.props.fonte).filter(Boolean))].join(', ');
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     ctx.fillText(cortar(ctx, `${estado.config.titulo} · ${dataHoje} · Dados: ${fontes}${comRuas ? ` · ${PROVEDORES[estado.provedor].creditoTexto}` : ' · Limites: IBGE'}`, W - 112), 56, H - 34);
 

@@ -372,3 +372,7 @@ input[type="search"] {
   position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 800; margin: 0;
   background: var(--placa); color: var(--placa-texto); padding: 6px 12px; border-radius: 999px; font-size: 13px;
 }
+.selo-abriga { background: #111827; color: #ffffff; }
+.legenda-eleitoral { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--tinta-suave); }
+.legenda-eleitoral li { display: flex; align-items: center; gap: 8px; }
+.legenda-eleitoral svg { width: 20px; height: 20px; flex: none; }
