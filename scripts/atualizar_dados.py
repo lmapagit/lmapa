@@ -13,6 +13,8 @@ Opções de "atualizacao" em camadas.json:
     campos          coluna da fonte -> informação do mapa ("nome" é obrigatório)
     prefixo_nome    texto colocado antes do nome (ex.: "Feira ")
     filtro_nome     só mantém pontos cujo nome começa por um destes textos
+    ordenar_por     coluna usada para paginar (necessária em camadas sem chave primária)
+    campo_id        coluna que identifica cada ponto (quando a fonte não traz um id estável)
     agrupar_por     junta pontos com o mesmo valor (ex.: estação em duas linhas)
     lista           campos que viram lista ao agrupar
     tipo_por_prefixo  deduz o tipo pelo começo do nome
@@ -46,11 +48,17 @@ def baixar_wfs(cfg):
             "count": POR_PAGINA,
             "startIndex": inicio,
         }
+        # Camadas sem chave primária só aceitam paginação com uma ordem definida
+        if cfg.get("ordenar_por"):
+            params["sortBy"] = cfg["ordenar_por"]
         url = cfg["url"] + "?" + urllib.parse.urlencode(params)
         req = urllib.request.Request(url, headers={"User-Agent": "lmapa/1.0"})
         with urllib.request.urlopen(req, timeout=180) as resp:
             pagina = json.load(resp)["features"]
         for f in pagina:
+            valor_id = f["properties"].get(cfg["campo_id"]) if cfg.get("campo_id") else None
+            if valor_id is not None:
+                f["id"] = f"{cfg['typeName'].split(':')[-1]}.{valor_id}"
             chave = f.get("id") or json.dumps(f.get("geometry"))
             if chave not in vistos:
                 vistos.add(chave)
