@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapa de Infraestrutura</title>
+<meta name="description" content="Mapa interativo de equipamentos de saúde, educação, transporte, serviços essenciais e cultura, com rota exportável.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="app">
+  <aside class="painel" id="painel" aria-label="Painel de controle">
+    <header class="cabecalho">
+      <p class="sobretitulo">Dados públicos</p>
+      <h1 id="titulo">Mapa de Infraestrutura</h1>
+      <p class="resumo" id="resumo">Carregando bases…</p>
+    </header>
+
+    <nav class="abas" role="tablist" aria-label="Seções">
+      <button class="aba" role="tab" id="aba-filtros" aria-controls="sec-filtros" aria-selected="true">Filtros</button>
+      <button class="aba" role="tab" id="aba-perto" aria-controls="sec-perto" aria-selected="false">Perto de mim</button>
+      <button class="aba" role="tab" id="aba-rota" aria-controls="sec-rota" aria-selected="false">Rota <span class="contador" id="contador-rota">0</span></button>
+    </nav>
+
+    <section class="secao" id="sec-filtros" role="tabpanel" aria-labelledby="aba-filtros">
+      <label class="rotulo" for="busca">Buscar pelo nome</label>
+      <input id="busca" type="search" placeholder="Ex.: Sé, AMA, Bom Prato" autocomplete="off">
+      <ul class="resultados" id="resultados-busca" hidden></ul>
+
+      <h2 class="rotulo">Temas</h2>
+      <div class="temas" id="temas"></div>
+
+      <div class="titulo-bases">
+        <h2 class="rotulo">Bases de dados</h2>
+        <button class="botao mini-texto" id="btn-todas" type="button">Desmarcar todas</button>
+      </div>
+      <ul class="camadas" id="camadas"></ul>
+    </section>
+
+    <section class="secao" id="sec-perto" role="tabpanel" aria-labelledby="aba-perto" hidden>
+      <div class="acoes">
+        <button class="botao primario" id="btn-localizar" type="button">Usar minha localização</button>
+        <button class="botao" id="btn-marcar" type="button" aria-pressed="false">Marcar no mapa</button>
+      </div>
+      <p class="aviso" id="aviso-local">Mostra os locais mais próximos de você, dentro dos temas ligados nos filtros.</p>
+      <ol class="lista-locais" id="lista-perto"></ol>
+    </section>
+
+    <section class="secao" id="sec-rota" role="tabpanel" aria-labelledby="aba-rota" hidden>
+      <p class="aviso" id="aviso-rota">Abra um ponto no mapa e toque em “Adicionar à rota”. A ordem da lista é a ordem do percurso.</p>
+      <ol class="lista-rota" id="lista-rota"></ol>
+      <div class="totais" id="totais-rota" hidden>
+        <span><strong id="dist-rota">0 km</strong> <span id="modo-rota-texto">em linha reta</span></span>
+        <span id="tempo-rota"></span>
+      </div>
+      <label class="alternar" for="usar-ruas">
+        <input type="checkbox" id="usar-ruas" checked>
+        Traçar pelas ruas (a pé), quando disponível
+      </label>
+      <div class="acoes">
+        <button class="botao" id="btn-otimizar" type="button">Ordenar pela proximidade</button>
+        <button class="botao primario" id="btn-imagem" type="button">Salvar imagem</button>
+        <button class="botao" id="btn-compartilhar" type="button">Copiar link</button>
+        <button class="botao perigo" id="btn-limpar" type="button">Limpar</button>
+      </div>
+      <p class="aviso" id="status-rota" role="status"></p>
+      <div class="previa" id="previa" hidden>
+        <img id="previa-img" alt="Imagem da rota gerada">
+        <p class="aviso">Se o download não começar, toque e segure a imagem para salvar.</p>
+      </div>
+    </section>
+
+    <footer class="rodape">
+      <p>Fontes listadas em cada base. Créditos do mapa base no canto do mapa.</p>
+    </footer>
+  </aside>
+
+  <main class="mapa-area">
+    <div id="mapa" aria-label="Mapa"></div>
+    <p class="faixa" id="faixa" hidden></p>
+  </main>
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

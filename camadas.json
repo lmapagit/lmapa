@@ -1,0 +1,768 @@
+{
+  "titulo": "Mapa de Infraestrutura",
+  "centro_inicial": [
+    -23.5505,
+    -46.6333
+  ],
+  "zoom_inicial": 12,
+  "temas": [
+    {
+      "id": "saude",
+      "nome": "Saúde",
+      "cor": "#c8324a"
+    },
+    {
+      "id": "educacao",
+      "nome": "Educação",
+      "cor": "#b7791f"
+    },
+    {
+      "id": "transporte",
+      "nome": "Transporte",
+      "cor": "#1f5bb5"
+    },
+    {
+      "id": "servicos",
+      "nome": "Serviços essenciais",
+      "cor": "#24804f"
+    },
+    {
+      "id": "cultura",
+      "nome": "Cultura e lazer",
+      "cor": "#7b4bb3"
+    }
+  ],
+  "camadas": [
+    {
+      "id": "hospitais",
+      "nome": "Hospitais",
+      "tema": "saude",
+      "arquivo": "data/hospitais.geojson",
+      "simbolo": "H",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Gestão"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_saude_hospital"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_saude_hospital",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "nm_esfera_administrativa_equipamento"
+        }
+      }
+    },
+    {
+      "id": "ubs",
+      "nome": "UBS e postos de saúde",
+      "tema": "saude",
+      "arquivo": "data/ubs.geojson",
+      "simbolo": "U",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Tipo"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_saude_ubs_posto_centro"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_saude_ubs_posto_centro",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "nm_tipo_equipamento"
+        }
+      }
+    },
+    {
+      "id": "urgencia",
+      "nome": "Pronto-socorros e AMA 24h",
+      "tema": "saude",
+      "arquivo": "data/urgencia.geojson",
+      "simbolo": "PS",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Tipo"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_saude_urgencia_emergencia"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_saude_urgencia_emergencia",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "nm_tipo_equipamento"
+        }
+      }
+    },
+    {
+      "id": "ambulatorios",
+      "nome": "AMAs e ambulatórios especializados",
+      "tema": "saude",
+      "arquivo": "data/ambulatorios.geojson",
+      "simbolo": "+",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Tipo"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_saude_ambulatorios_especializados"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_saude_ambulatorios_especializados",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        },
+        "tipo_por_prefixo": {
+          "AMA": "AMA (Assistência Médica Ambulatorial)",
+          "AME": "AME (Ambulatório Médico de Especialidades)",
+          "AMB ESPEC": "Ambulatório de especialidades",
+          "CEO": "Centro de Especialidades Odontológicas",
+          "CER": "Centro Especializado em Reabilitação",
+          "URSI": "Referência à Saúde do Idoso",
+          "CR PICS": "Práticas Integrativas e Complementares",
+          "UNIDADE ODONTOL": "Unidade odontológica móvel",
+          "*": "Ambulatório especializado"
+        }
+      }
+    },
+    {
+      "id": "escolas_publicas",
+      "nome": "Escolas públicas (fundamental e médio)",
+      "tema": "educacao",
+      "arquivo": "data/escolas_publicas.geojson",
+      "simbolo": "E",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Rede"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_educacao_rede_publica"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_educacao_rede_publica",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "tx_esfera_administrativa_equipamento"
+        }
+      }
+    },
+    {
+      "id": "educacao_infantil",
+      "nome": "Educação infantil (CEI, EMEI, creches)",
+      "tema": "educacao",
+      "arquivo": "data/educacao_infantil.geojson",
+      "simbolo": "EI",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Tipo"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_educacao_infantil_rede_publica"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_educacao_infantil_rede_publica",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "tx_tipo_equipamento"
+        }
+      }
+    },
+    {
+      "id": "ensino_tecnico",
+      "nome": "Escolas técnicas públicas (Etec)",
+      "tema": "educacao",
+      "arquivo": "data/ensino_tecnico.geojson",
+      "simbolo": "ET",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_educacao_ensino_tecnico_rede_publica"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_educacao_ensino_tecnico_rede_publica",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        }
+      }
+    },
+    {
+      "id": "ceu",
+      "nome": "CEUs",
+      "tema": "educacao",
+      "arquivo": "data/ceu.geojson",
+      "simbolo": "CEU",
+      "campos_popup": [
+        {
+          "campo": "tipo",
+          "rotulo": "Tipo"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_educacao_ceu"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_educacao_ceu",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone",
+          "tipo": "nm_tipo_equipamento"
+        }
+      }
+    },
+    {
+      "id": "escolas_privadas",
+      "nome": "Escolas particulares",
+      "tema": "educacao",
+      "arquivo": "data/escolas_privadas.geojson",
+      "simbolo": "EP",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_educacao_rede_privada"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_educacao_rede_privada",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        }
+      }
+    },
+    {
+      "id": "metro",
+      "nome": "Estações de metrô",
+      "tema": "transporte",
+      "arquivo": "data/metro.geojson",
+      "simbolo": "M",
+      "campos_popup": [
+        {
+          "campo": "linhas",
+          "rotulo": "Linhas"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:estacao_metro"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:estacao_metro",
+        "campos": {
+          "nome": "nm_estacao_metro_trem",
+          "linhas": "nm_linha_metro_trem"
+        },
+        "agrupar_por": "nome",
+        "lista": [
+          "linhas"
+        ]
+      }
+    },
+    {
+      "id": "trem",
+      "nome": "Estações de trem (CPTM)",
+      "tema": "transporte",
+      "arquivo": "data/trem.geojson",
+      "simbolo": "T",
+      "campos_popup": [
+        {
+          "campo": "linhas",
+          "rotulo": "Linhas"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:estacao_trem"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:estacao_trem",
+        "campos": {
+          "nome": "nm_estacao_metro_trem",
+          "linhas": "nm_linha_metro_trem"
+        },
+        "agrupar_por": "nome",
+        "lista": [
+          "linhas"
+        ]
+      }
+    },
+    {
+      "id": "pontos_onibus",
+      "nome": "Pontos de ônibus",
+      "tema": "transporte",
+      "arquivo": "data/pontos_onibus.geojson",
+      "simbolo": "·",
+      "campos_popup": [
+        {
+          "campo": "referencia",
+          "rotulo": "Referência"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:ponto_onibus"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:ponto_onibus",
+        "campos": {
+          "nome": "nm_ponto_onibus",
+          "referencia": "tx_endereco_ponto_onibus"
+        }
+      },
+      "zoom_minimo": 15
+    },
+    {
+      "id": "bom_prato",
+      "nome": "Restaurantes Bom Prato",
+      "tema": "servicos",
+      "arquivo": "data/bom_prato.geojson",
+      "simbolo": "BP",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "esfera",
+          "rotulo": "Gestão"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_bom_prato"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_bom_prato",
+        "campos": {
+          "nome": "nm_bairro_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "esfera": "nm_esfera_administrativa_equipamento"
+        },
+        "prefixo_nome": "Bom Prato "
+      }
+    },
+    {
+      "id": "descomplica",
+      "nome": "Descomplica SP",
+      "tema": "servicos",
+      "arquivo": "data/descomplica.geojson",
+      "simbolo": "D",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "horario",
+          "rotulo": "Horário"
+        },
+        {
+          "campo": "servicos",
+          "rotulo": "Serviços"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:descomplica"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:descomplica",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "nm_endereco",
+          "horario": "tx_horario_funcionamento",
+          "servicos": "tx_servico"
+        },
+        "prefixo_nome": "Descomplica SP "
+      }
+    },
+    {
+      "id": "cras",
+      "nome": "CRAS, CREAS e Centros POP",
+      "tema": "servicos",
+      "arquivo": "data/cras.geojson",
+      "simbolo": "AS",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_assistencia_social"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_assistencia_social",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        },
+        "filtro_nome": [
+          "CRAS",
+          "CREAS",
+          "CENTRO POP",
+          "CENTRO DE REFERENCIA"
+        ]
+      }
+    },
+    {
+      "id": "feiras",
+      "nome": "Feiras livres",
+      "tema": "servicos",
+      "arquivo": "data/feiras.geojson",
+      "simbolo": "F",
+      "campos_popup": [
+        {
+          "campo": "dia",
+          "rotulo": "Dia"
+        },
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_feira_livre"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_feira_livre",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "dia": "tx_dia_funcionamento"
+        },
+        "prefixo_nome": "Feira "
+      }
+    },
+    {
+      "id": "bibliotecas",
+      "nome": "Bibliotecas públicas",
+      "tema": "cultura",
+      "arquivo": "data/bibliotecas.geojson",
+      "simbolo": "B",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_cultura_bibliotecas"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_cultura_bibliotecas",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        }
+      }
+    },
+    {
+      "id": "espacos_culturais",
+      "nome": "Centros culturais",
+      "tema": "cultura",
+      "arquivo": "data/espacos_culturais.geojson",
+      "simbolo": "C",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_cultura_espacos_culturais"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_cultura_espacos_culturais",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        }
+      }
+    },
+    {
+      "id": "centros_esportivos",
+      "nome": "Centros esportivos",
+      "tema": "cultura",
+      "arquivo": "data/centros_esportivos.geojson",
+      "simbolo": "CE",
+      "campos_popup": [
+        {
+          "campo": "endereco",
+          "rotulo": "Endereço"
+        },
+        {
+          "campo": "bairro",
+          "rotulo": "Bairro"
+        },
+        {
+          "campo": "telefone",
+          "rotulo": "Telefone"
+        }
+      ],
+      "fonte": {
+        "nome": "GeoSampa (Prefeitura de São Paulo)",
+        "url": "https://geosampa.prefeitura.sp.gov.br/",
+        "camada": "geoportal:equipamento_esporte_centro_esportivo"
+      },
+      "atualizacao": {
+        "tipo": "wfs",
+        "url": "https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows",
+        "typeName": "geoportal:equipamento_esporte_centro_esportivo",
+        "campos": {
+          "nome": "nm_equipamento",
+          "endereco": "tx_endereco_equipamento",
+          "bairro": "nm_bairro_equipamento",
+          "telefone": "tx_numero_telefone"
+        }
+      }
+    }
+  ]
+}
