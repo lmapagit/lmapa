@@ -92,10 +92,6 @@ python3 -m http.server 8000
 
 Depois abra http://localhost:8000. Abrir o `index.html` direto (duplo clique) não funciona, porque o navegador bloqueia a leitura dos arquivos de dados.
 
-## Testar sem servidor (um único arquivo)
-
-`python3 scripts/gerar_html_offline.py` cria `lmapa-offline.html`, com o site e os dados embutidos. Ele abre com duplo clique e não precisa ir para o GitHub. O mapa de ruas e o traçado da rota pelas ruas precisam de internet; sem ela, o fundo vira o contorno dos municípios e a rota sai em linha reta.
-
 ## Publicar no GitHub Pages
 
 1. Crie um repositório público no GitHub chamado `lmapa`.
