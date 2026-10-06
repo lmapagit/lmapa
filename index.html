@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="estilo.css?v=4">
+<link rel="stylesheet" href="estilo.css?v=5">
 </head>
 <body>
 <div class="app">
@@ -63,7 +63,7 @@
           </label>
           <label>Comparando com
             <select id="eleitoral-comparar">
-              <option value="estado" selected>todo o estado</option>
+              <option value="estado" selected>o próprio estado</option>
               <option value="municipio">o mesmo município</option>
             </select>
           </label>
@@ -104,6 +104,19 @@
     </section>
 
     <section class="secao" id="sec-rota" role="tabpanel" aria-labelledby="aba-rota" hidden>
+      <div class="sugerir">
+        <button class="botao primario largo" id="btn-sugerir" type="button" aria-expanded="false" aria-controls="painel-sugestoes">Sugerir boas rotas para mim</button>
+        <div class="painel-sugestoes" id="painel-sugestoes" hidden>
+          <div class="duracoes" id="duracoes" role="group" aria-label="Tempo de caminhada">
+            <button class="botao" type="button" data-min="10" aria-pressed="false">10 min</button>
+            <button class="botao" type="button" data-min="30" aria-pressed="true">30 min</button>
+            <button class="botao" type="button" data-min="60" aria-pressed="false">60 min</button>
+          </div>
+          <p class="aviso" id="sugestao-origem"></p>
+          <ol class="opcoes-rota" id="opcoes-rota"></ol>
+          <p class="aviso" id="nota-sugestao" hidden>Paradas escolhidas entre as bases ligadas nos filtros (sem pontos de ônibus). Tempo estimado a pé, sem contar as paradas. Votos em disputa: eleitores que não votaram nos dois principais candidatos nos locais de votação a até 300 m das paradas.</p>
+        </div>
+      </div>
       <p class="aviso" id="aviso-rota">Abra um ponto no mapa e toque em “Adicionar à rota”. A ordem da lista é a ordem do percurso.</p>
       <ol class="lista-rota" id="lista-rota"></ol>
       <div class="totais" id="totais-rota" hidden>
@@ -140,6 +153,6 @@
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

@@ -121,7 +121,7 @@ def tipo_por_prefixo(nome, regras):
 class Municipios:
     def __init__(self, caminho):
         geo = json.loads((RAIZ / caminho).read_text(encoding="utf-8"))
-        self.itens, self.grade = [], defaultdict(list)
+        self.itens, self.grade, self.uf_de = [], defaultdict(list), {}
         for f in geo["features"]:
             g = f["geometry"]
             poligonos = [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"]
@@ -130,6 +130,7 @@ class Municipios:
             ys = [y for a in aneis for _, y in a]
             i = len(self.itens)
             self.itens.append((f["properties"]["cod"], f["properties"]["nome"], aneis))
+            self.uf_de[f["properties"]["cod"]] = f["properties"].get("uf", "")
             for gx in range(math.floor(min(xs) * 10), math.floor(max(xs) * 10) + 1):
                 for gy in range(math.floor(min(ys) * 10), math.floor(max(ys) * 10) + 1):
                     self.grade[(gx, gy)].append(i)
@@ -147,8 +148,13 @@ class Municipios:
                 j = i
         return dentro
 
+    def caixa(self, uf):
+        """Retângulo (x0, y0, x1, y1) que envolve os municípios da UF."""
+        pts = [pt for cod, _, aneis in self.itens if self.uf_de[cod] == uf for a in aneis for pt in a]
+        return (min(x for x, _ in pts), min(y for _, y in pts), max(x for x, _ in pts), max(y for _, y in pts))
+
     def achar(self, lon, lat):
-        """(código IBGE, nome) do município que contém o ponto, ou None fora do estado."""
+        """(código IBGE, nome) do município que contém o ponto, ou None fora dos estados cobertos."""
         for i in self.grade.get((math.floor(lon * 10), math.floor(lat * 10)), []):
             cod, nome, aneis = self.itens[i]
             if self._dentro(lon, lat, aneis):
@@ -244,18 +250,18 @@ NATUREZA = {"1": "Pública", "2": "Privada", "3": "Filantrópica / sem fins lucr
 
 def carregar_cnes(ctx):
     if "cnes" not in ctx:
-        arquivo = baixar_para_arquivo(ctx["config"]["regiao"].get("cnes_url") or CNES_URL)
-        uf = ctx["config"]["regiao"]["uf_ibge"]
+        arquivo = baixar_para_arquivo(ctx["config"].get("cnes_url") or CNES_URL)
+        ufs = {r["uf_ibge"] for r in ctx["regioes"]}
         linhas = []
         with zipfile.ZipFile(arquivo) as z:
             nome = next(n for n in z.namelist() if n.lower().endswith(".csv"))
             with z.open(nome) as bruto:
                 for r in csv.DictReader(io.TextIOWrapper(bruto, encoding="latin-1"), delimiter=";"):
-                    if r["CO_UF"] == uf:
+                    if r["CO_UF"] in ufs:
                         linhas.append(r)
         Path(arquivo).unlink()
         ctx["cnes"] = linhas
-        print(f"  CNES: {len(linhas)} estabelecimentos no estado")
+        print(f"  CNES: {len(linhas)} estabelecimentos nos estados cobertos")
     return ctx["cnes"]
 
 
@@ -300,7 +306,7 @@ def overture_release():
 
 
 def overture_ler(ctx, tema, tipo, colunas, coluna_filtro, valores):
-    """Lê do Overture só os grupos de linhas que cruzam o estado e só as categorias pedidas."""
+    """Lê do Overture só os grupos de linhas que cruzam os estados cobertos e só as categorias pedidas."""
     import fsspec
     import pyarrow as pa
     import pyarrow.compute as pc
@@ -309,7 +315,6 @@ def overture_ler(ctx, tema, tipo, colunas, coluna_filtro, valores):
     if "overture_release" not in ctx:
         ctx["overture_release"] = overture_release()
         print(f"  Overture: versão {ctx['overture_release']}")
-    x0, y0, x1, y1 = ctx["bbox"]
     prefixo = urllib.parse.quote(f"release/{ctx['overture_release']}/theme={tema}/type={tipo}/")
     chaves, token = [], None
     while True:
@@ -330,15 +335,18 @@ def overture_ler(ctx, tema, tipo, colunas, coluna_filtro, valores):
         grupos = []
         for g in range(md.num_row_groups):
             st = {n: md.row_group(g).column(i).statistics for n, i in ix.items()}
-            if st["bbox.xmax"].min > x1 or st["bbox.xmin"].max < x0 or st["bbox.ymax"].min > y1 or st["bbox.ymin"].max < y0:
-                continue
-            grupos.append(g)
+            if any(not (st["bbox.xmax"].min > x1 or st["bbox.xmin"].max < x0 or st["bbox.ymax"].min > y1 or st["bbox.ymin"].max < y0)
+                   for x0, y0, x1, y1 in ctx["caixas"]):
+                grupos.append(g)
         for i in range(0, len(grupos), 8):
             t = arq.read_row_groups(grupos[i:i + 8], columns=colunas)
             bx = t.column("bbox")
             xm, ym = pc.struct_field(bx, "xmin"), pc.struct_field(bx, "ymin")
-            dentro = pc.and_(pc.and_(pc.greater_equal(xm, x0), pc.less_equal(xm, x1)),
-                             pc.and_(pc.greater_equal(ym, y0), pc.less_equal(ym, y1)))
+            dentro = None
+            for x0, y0, x1, y1 in ctx["caixas"]:
+                d = pc.and_(pc.and_(pc.greater_equal(xm, x0), pc.less_equal(xm, x1)),
+                            pc.and_(pc.greater_equal(ym, y0), pc.less_equal(ym, y1)))
+                dentro = d if dentro is None else pc.or_(dentro, d)
             t = t.filter(pc.and_(dentro, pc.is_in(t.column(coluna_filtro), value_set=pa.array(sorted(valores)))))
             if t.num_rows:
                 tabelas.append(t)
@@ -429,7 +437,9 @@ def bloco_de(lon, lat):
 
 
 def montar(camada, ctx):
-    muni, capital = ctx["municipios"], ctx["config"]["regiao"]["capital_ibge"]
+    muni = ctx["municipios"]
+    # capitais que já têm fonte municipal própria (ex.: GeoSampa em São Paulo)
+    capitais = {r["capital_ibge"] for r in ctx["regioes"] if r.get("capital_com_fonte_municipal")}
     pontos, fontes_usadas = [], []
     for n, cfg in enumerate(camada["fontes"]):
         brutos = FONTES[cfg["tipo"]](cfg, ctx)
@@ -438,7 +448,7 @@ def montar(camada, ctx):
         for lon, lat, id_fonte, props in brutos:
             if cfg["tipo"] != "wfs":
                 achado = muni.achar(lon, lat)
-                if not achado or (cfg.get("fora_da_capital") and achado[0] == capital):
+                if not achado or (cfg.get("fora_da_capital") and achado[0] in capitais):
                     continue
                 props["municipio"] = achado[1]
             props["fonte"] = rotulo
@@ -499,9 +509,9 @@ def ler_csv_zip(caminho, filtro=None, padrao=r"\.csv$"):
                         yield r
 
 
-def url_boletins(cfg):
+def url_boletins(cfg, uf):
     """Acha no portal de dados abertos do TSE o arquivo mais recente de boletins de urna da UF."""
-    padrao = re.compile(rf"bweb_{cfg['turno']}t_{cfg['uf']}_\d+\.zip$", re.I)
+    padrao = re.compile(rf"bweb_{cfg['turno']}t_{uf}_\d+\.zip$", re.I)
     try:
         api = f"https://dadosabertos.tse.jus.br/api/3/action/package_show?id={cfg['pacote_boletins']}"
         urls = sorted(r["url"] for r in json.load(abrir(api))["result"]["resources"] if padrao.search(r.get("url") or ""))
@@ -509,7 +519,7 @@ def url_boletins(cfg):
             return urls[-1]
     except Exception as erro:
         print(f"  aviso: portal do TSE não respondeu ({erro!r}); usando o endereço da configuração")
-    return cfg["boletins_url"]
+    return cfg["boletins_url"].replace("_UF_", f"_{uf}_")
 
 
 def numero(v):
@@ -527,33 +537,7 @@ def coordenada(v):
     return None if x in (0, -1) else x
 
 
-def atualizar_eleitoral(config, ctx):
-    cfg = config["eleitoral"]
-    uf, turno, cargo = cfg["uf"], str(cfg["turno"]), str(cfg["cargo"])
-
-    # 1. Seções e locais de votação, com coordenadas
-    arq = baixar_para_arquivo(cfg["locais_url"])
-    secoes, locais = {}, {}
-    for r in ler_csv_zip(arq, lambda r: r.get("SG_UF") == uf and r.get("NR_TURNO", turno) in (turno, "")):
-        chave_local = (r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_LOCAL_VOTACAO"])
-        secoes[(r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_SECAO"])] = chave_local
-        if chave_local not in locais:
-            locais[chave_local] = {
-                "lat": coordenada(r.get("NR_LATITUDE")), "lon": coordenada(r.get("NR_LONGITUDE")),
-                "nome": titulo(limpar(r.get("NM_LOCAL_VOTACAO"))),
-                "endereco": titulo(limpar(r.get("DS_ENDERECO"))),
-                "municipio": titulo(limpar(r.get("NM_MUNICIPIO"))),
-            }
-    Path(arq).unlink()
-    print(f"  TSE: {len(secoes)} seções em {len(locais)} locais de votação")
-    if not secoes:
-        raise RuntimeError("nenhuma seção encontrada no arquivo de locais de votação")
-
-    # 2. Boletins de urna: votos por seção
-    arq = baixar_para_arquivo(url_boletins(cfg))
-    aptos, nomes, total_cand = {}, {}, defaultdict(int)
-    votos = defaultdict(lambda: defaultdict(int))
-    por_tipo = defaultdict(lambda: defaultdict(int))
+def ler_boletins(arq, cargo, turno, aptos, nomes, total_cand, votos, por_tipo):
     for r in ler_csv_zip(arq, lambda r: r.get("CD_CARGO_PERGUNTA") == cargo and r.get("NR_TURNO", turno) == turno):
         sec = (r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_SECAO"])
         aptos[sec] = numero(r["QT_APTOS"])
@@ -566,7 +550,39 @@ def atualizar_eleitoral(config, ctx):
             nomes[nr] = titulo(limpar(r.get("NM_VOTAVEL")))
         elif tipo in ("branco", "nulo"):
             por_tipo[sec][tipo] += qt
+
+
+def atualizar_eleitoral(config, ctx):
+    cfg = config["eleitoral"]
+    ufs, turno, cargo = [r["uf"] for r in ctx["regioes"]], str(cfg["turno"]), str(cfg["cargo"])
+
+    # 1. Seções e locais de votação, com coordenadas
+    arq = baixar_para_arquivo(cfg["locais_url"])
+    secoes, locais = {}, {}
+    for r in ler_csv_zip(arq, lambda r: r.get("SG_UF") in ufs and r.get("NR_TURNO", turno) in (turno, "")):
+        chave_local = (r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_LOCAL_VOTACAO"])
+        secoes[(r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_SECAO"])] = chave_local
+        if chave_local not in locais:
+            locais[chave_local] = {
+                "lat": coordenada(r.get("NR_LATITUDE")), "lon": coordenada(r.get("NR_LONGITUDE")),
+                "nome": titulo(limpar(r.get("NM_LOCAL_VOTACAO"))),
+                "endereco": titulo(limpar(r.get("DS_ENDERECO"))),
+                "municipio": titulo(limpar(r.get("NM_MUNICIPIO"))),
+                "uf": r.get("SG_UF"),
+            }
     Path(arq).unlink()
+    print(f"  TSE: {len(secoes)} seções em {len(locais)} locais de votação")
+    if not secoes:
+        raise RuntimeError("nenhuma seção encontrada no arquivo de locais de votação")
+
+    # 2. Boletins de urna (um arquivo por UF): votos por seção
+    aptos, nomes, total_cand = {}, {}, defaultdict(int)
+    votos = defaultdict(lambda: defaultdict(int))
+    por_tipo = defaultdict(lambda: defaultdict(int))
+    for uf in ufs:
+        arq = baixar_para_arquivo(url_boletins(cfg, uf))
+        ler_boletins(arq, cargo, turno, aptos, nomes, total_cand, votos, por_tipo)
+        Path(arq).unlink()
     if not aptos:
         raise RuntimeError("nenhum voto para o cargo escolhido nos boletins de urna")
 
@@ -594,7 +610,7 @@ def atualizar_eleitoral(config, ctx):
     if sem_local:
         print(f"  aviso: {sem_local} seções sem local de votação correspondente")
 
-    campos = ["lat", "lng", "nome", "endereco", "municipio", "aptos", "abstencoes", "brancos", "nulos", "outros", "c1", "c2"]
+    campos = ["lat", "lng", "nome", "endereco", "municipio", "aptos", "abstencoes", "brancos", "nulos", "outros", "c1", "c2", "uf"]
     linhas, sem_coord = [], 0
     for chave_local, s in soma.items():
         loc = locais[chave_local]
@@ -602,7 +618,7 @@ def atualizar_eleitoral(config, ctx):
             sem_coord += 1
             continue
         linhas.append([round(loc["lat"], 6), round(loc["lon"], 6), loc["nome"], loc["endereco"], loc["municipio"],
-                       s["aptos"], s["abstencoes"], s["brancos"], s["nulos"], s["outros"], s["c1"], s["c2"]])
+                       s["aptos"], s["abstencoes"], s["brancos"], s["nulos"], s["outros"], s["c1"], s["c2"], loc["uf"]])
     if sem_coord:
         print(f"  aviso: {sem_coord} locais de votação sem coordenadas ficaram de fora")
     saida = {
@@ -626,10 +642,10 @@ def atualizar_eleitoral(config, ctx):
 
 def main(filtro):
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
-    municipios = Municipios(config["regiao"]["municipios"])
-    xs = [x for _, _, aneis in municipios.itens for a in aneis for x, _ in a]
-    ys = [y for _, _, aneis in municipios.itens for a in aneis for _, y in a]
-    ctx = {"config": config, "municipios": municipios, "bbox": (min(xs), min(ys), max(xs), max(ys))}
+    municipios = Municipios(config["municipios"])
+    regioes = config["regioes"]
+    ctx = {"config": config, "municipios": municipios, "regioes": regioes,
+           "caixas": [municipios.caixa(r["uf"]) for r in regioes]}
     falhas = 0
     for camada in config["camadas"]:
         if filtro and camada["id"] not in filtro:

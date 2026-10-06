@@ -480,6 +480,7 @@
   }
 
   async function carregarEleitoral() {
+    if (eleitoral.dados) return;
     eleitoral.pedido ||= lerJSON(estado.config.eleitoral.arquivo);
     const bruto = await eleitoral.pedido;
     const ix = Object.fromEntries(bruto.campos.map((c, i) => [c, i]));
@@ -507,7 +508,7 @@
     const grupos = new Map();
     for (const l of eleitoral.dados.locais) {
       l.destacado = false;
-      const g = eleitoral.comparar === 'municipio' ? l.municipio : '';
+      const g = eleitoral.comparar === 'municipio' ? `${l.uf || ''} ${l.municipio}` : (l.uf || '');
       if (!grupos.has(g)) grupos.set(g, []);
       grupos.get(g).push(l);
     }
@@ -597,7 +598,7 @@
       }
     }
     if (!ativo) return;
-    const base = eleitoral.comparar === 'municipio' ? 'em cada município' : 'no estado';
+    const base = eleitoral.comparar === 'municipio' ? 'em cada município' : 'em cada estado';
     const simulado = eleitoral.dados.metadata.simulado ? ' Atenção: dados simulados, só para testar o funcionamento.' : '';
     $('eleitoral-resumo').textContent = `${fmtN(eleitoral.destacados)} locais de votação destacados (os ${eleitoral.corte}% mais altos ${base}). `
       + `${fmtN(perto)} locais das bases ligadas, já carregados no mapa, ficam a até ${formatarDist(eleitoral.raio)} de um deles, `
@@ -909,6 +910,189 @@
     if (!navigator.clipboard) { mostrarLink(); return; }
     navigator.clipboard.writeText(link).then(() => { status.textContent = 'Link da rota copiado.'; }, mostrarLink);
   });
+
+  // ---------- Sugestão de rotas ----------
+  // Monta rotas a pé de 10, 30 ou 60 minutos a partir de você (ou do centro do mapa),
+  // escolhendo paradas entre as bases ligadas. Cada opção pesa de um jeito o número de
+  // locais e os votos em disputa (eleitores que não votaram nos dois principais candidatos
+  // nos locais de votação perto das paradas).
+  const METROS_POR_MINUTO = (VELOCIDADE_A_PE_KMH * 1000) / 60;
+  const FATOR_RUAS = 1.3;          // caminho pelas ruas ≈ 30% maior que a linha reta
+  const RAIO_VOTOS = 300;          // locais de votação "impactados" por uma parada
+  const MAX_PARADAS = 15;
+  const ESTRATEGIAS = [
+    { nome: 'Mais locais de interesse', pesoLocais: 1, pesoVotos: 0.05 },
+    { nome: 'Equilibrada', pesoLocais: 1, pesoVotos: 1 },
+    { nome: 'Mais votos em disputa', pesoLocais: 0.05, pesoVotos: 1 },
+  ];
+  const camadaSugestao = L.layerGroup().addTo(mapa);
+  let minutosSugestao = 30;
+
+  function locaisDeVotacaoPerto(latlng, raio) {
+    if (!eleitoral.dados) return [];
+    const passos = Math.ceil(raio / 1100) + 1;
+    const cy = Math.floor(latlng.lat * 100), cx = Math.floor(latlng.lng * 100);
+    const achados = [];
+    for (let y = cy - passos; y <= cy + passos; y++) {
+      for (let x = cx - passos; x <= cx + passos; x++) {
+        for (const l of eleitoral.grade.get(`${y}_${x}`) || []) if (latlng.distanceTo(l.latlng) <= raio) achados.push(l);
+      }
+    }
+    return achados;
+  }
+
+  async function prepararCandidatos(origem, alcance) {
+    if (estado.config.eleitoral) { try { await carregarEleitoral(); } catch { /* segue sem votos */ } }
+    // baixa os blocos da área do passeio, mesmo os de bases que só aparecem com o mapa aproximado
+    const area = origem.toBounds(alcance * 2);
+    const downloads = [];
+    for (const c of estado.camadas) {
+      if (c.sugerir === false || !estado.camadasAtivas.has(c.id) || !estado.temasAtivos.has(c.tema)) continue;
+      for (const chave of blocosDaArea(c, area)) downloads.push(carregarBloco(c, chave));
+    }
+    await Promise.all(downloads);
+    const candidatos = [];
+    for (const p of estado.pontos.values()) {
+      if (p.camada.sugerir === false || !visivel(p)) continue;
+      const d = origem.distanceTo(p.latlng) * FATOR_RUAS;
+      if (d > alcance) continue;
+      p._votosPerto ||= locaisDeVotacaoPerto(p.latlng, RAIO_VOTOS);
+      candidatos.push(p);
+    }
+    return candidatos;
+  }
+
+  // Escolha gulosa: a cada passo, a parada com melhor ganho por metro andado.
+  // Testa várias primeiras paradas e fica com a rota de maior pontuação.
+  function montarRota(origem, candidatos, orcamento, estrategia, escala) {
+    const pontuar = (r) => estrategia.pesoLocais * r.pontos.length + estrategia.pesoVotos * (r.votos / escala);
+    const primeiras = candidatos
+      .map((p) => ({ p, d: origem.distanceTo(p.latlng) * FATOR_RUAS }))
+      .filter((x) => x.d <= orcamento)
+      .map((x) => ({ p: x.p, nota: (estrategia.pesoLocais + estrategia.pesoVotos * (x.p._votosPerto.reduce((s, l) => s + l.fora, 0) / escala)) / (x.d + 60) }))
+      .sort((a, b) => b.nota - a.nota)
+      .slice(0, 12);
+    let melhor = montarRotaGulosa(origem, candidatos, orcamento, estrategia, escala, null);
+    for (const { p } of primeiras) {
+      const r = montarRotaGulosa(origem, candidatos, orcamento, estrategia, escala, p);
+      if (pontuar(r) > pontuar(melhor)) melhor = r;
+    }
+    return melhor;
+  }
+
+  function montarRotaGulosa(origem, candidatos, orcamento, estrategia, escala, primeira) {
+    const rota = [];
+    const usados = new Set();
+    const cobertos = new Set();
+    let atual = origem, gasto = 0;
+    // evita parar duas vezes no mesmo lugar (ex.: escola e local de votação no mesmo endereço)
+    const lugares = new Set();
+    while (rota.length < MAX_PARADAS) {
+      let melhor = null, melhorNota = 0, melhorCusto = 0;
+      for (const p of candidatos) {
+        if (usados.has(p.id)) continue;
+        const lugar = `${p.latlng.lat.toFixed(4)},${p.latlng.lng.toFixed(4)}`;
+        if (lugares.has(lugar)) continue;
+        const custo = atual.distanceTo(p.latlng) * FATOR_RUAS;
+        if (gasto + custo > orcamento) continue;
+        if (primeira && !rota.length && p !== primeira) continue;
+        let votos = 0;
+        for (const l of p._votosPerto) if (!cobertos.has(l)) votos += l.fora;
+        const ganho = estrategia.pesoLocais + estrategia.pesoVotos * (votos / escala);
+        const nota = ganho / (custo + 60);
+        if (nota > melhorNota) { melhor = p; melhorNota = nota; melhorCusto = custo; }
+      }
+      if (!melhor) break;
+      rota.push(melhor);
+      usados.add(melhor.id);
+      lugares.add(`${melhor.latlng.lat.toFixed(4)},${melhor.latlng.lng.toFixed(4)}`);
+      melhor._votosPerto.forEach((l) => cobertos.add(l));
+      gasto += melhorCusto;
+      atual = melhor.latlng;
+    }
+    const votos = [...cobertos].reduce((s, l) => s + l.fora, 0);
+    return { estrategia, pontos: rota, distancia: gasto, votos, locaisVotacao: cobertos.size };
+  }
+
+  async function sugerirRotas() {
+    const lista = $('opcoes-rota');
+    lista.replaceChildren(el('li', { class: 'aviso' }, 'Procurando boas rotas…'));
+    camadaSugestao.clearLayers();
+    const origem = estado.voce || mapa.getCenter();
+    $('sugestao-origem').textContent = estado.voce
+      ? 'Saindo da sua localização (aba "Perto de mim").'
+      : 'Saindo do centro do mapa. Para sair de onde você está, use a aba "Perto de mim".';
+    const orcamento = minutosSugestao * METROS_POR_MINUTO;
+    const candidatos = await prepararCandidatos(origem, orcamento);
+    if (!candidatos.length) {
+      lista.replaceChildren(el('li', { class: 'aviso' }, 'Não há locais das bases ligadas ao alcance. Ligue mais temas ou mova o mapa.'));
+      return;
+    }
+    // escala dos votos: mediana dos locais de votação próximos, para equilibrar com o número de locais
+    const valores = candidatos.flatMap((p) => p._votosPerto.map((l) => l.fora)).sort((a, b) => a - b);
+    const escala = valores.length ? Math.max(valores[Math.floor(valores.length / 2)], 1) : 1;
+    const opcoes = [];
+    for (const e of ESTRATEGIAS) {
+      const r = montarRota(origem, candidatos, orcamento, e, escala);
+      const chave = r.pontos.map((p) => p.id).join(',');
+      if (r.pontos.length && !opcoes.some((o) => o.chave === chave)) opcoes.push({ ...r, chave });
+    }
+    lista.replaceChildren();
+    if (!opcoes.length) { lista.append(el('li', { class: 'aviso' }, 'Nenhuma rota cabe nesse tempo. Tente um tempo maior.')); return; }
+    const semVotos = !eleitoral.dados;
+    opcoes.forEach((o, i) => {
+      const porTema = new Map();
+      o.pontos.forEach((p) => porTema.set(p.tema, (porTema.get(p.tema) || 0) + 1));
+      const minutos = Math.max(1, Math.round(o.distancia / METROS_POR_MINUTO));
+      lista.append(el('li', { class: 'opcao-rota' },
+        el('p', { class: 'opcao-titulo' }, `${i + 1}. ${o.estrategia.nome}`),
+        el('dl', { class: 'opcao-dados' },
+          el('dt', {}, 'Locais'), el('dd', {}, String(o.pontos.length)),
+          el('dt', {}, 'Caminhada'), el('dd', {}, `≈ ${minutos} min · ${formatarDist(o.distancia)}`),
+          el('dt', {}, 'Votos em disputa'), el('dd', {}, semVotos ? 'sem dados' : `${fmtN(o.votos)} eleitores em ${o.locaisVotacao} ${o.locaisVotacao === 1 ? 'local' : 'locais'} de votação`)),
+        el('p', { class: 'opcao-temas' }, ...[...porTema].map(([t, n]) => el('span', { class: 'chip-tema', style: `--cor:${t?.cor}` }, `${t?.nome} ${n}`))),
+        el('div', { class: 'acoes' },
+          el('button', { class: 'botao', type: 'button', onclick: () => verSugestao(o, origem) }, 'Ver no mapa'),
+          el('button', { class: 'botao primario', type: 'button', onclick: () => usarSugestao(o) }, 'Usar esta rota')),
+      ));
+    });
+    $('nota-sugestao').hidden = false;
+    verSugestao(opcoes[0], origem);
+  }
+
+  function verSugestao(o, origem) {
+    camadaSugestao.clearLayers();
+    const coords = [origem, ...o.pontos.map((p) => p.latlng)];
+    L.polyline(coords, { color: '#ff7a1a', weight: 4, dashArray: '6 8', interactive: false }).addTo(camadaSugestao);
+    o.pontos.forEach((p, i) => L.marker(p.latlng, {
+      icon: L.divIcon({ className: '', html: `<div class="marcador-numero sugestao" style="--cor:${p.cor}">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] }),
+      interactive: false,
+    }).addTo(camadaSugestao));
+    mapa.fitBounds(L.latLngBounds(coords).pad(0.15));
+  }
+
+  function usarSugestao(o) {
+    camadaSugestao.clearLayers();
+    estado.rota = o.pontos.map((p) => p.id);
+    rotaMudou();
+    $('painel-sugestoes').hidden = true;
+    $('btn-sugerir').setAttribute('aria-expanded', 'false');
+    mapa.fitBounds(L.latLngBounds(o.pontos.map((p) => p.latlng)).pad(0.2));
+  }
+
+  $('btn-sugerir').addEventListener('click', () => {
+    const painel = $('painel-sugestoes');
+    painel.hidden = !painel.hidden;
+    $('btn-sugerir').setAttribute('aria-expanded', String(!painel.hidden));
+    if (painel.hidden) camadaSugestao.clearLayers(); else sugerirRotas();
+  });
+  for (const b of document.querySelectorAll('#duracoes button')) {
+    b.addEventListener('click', () => {
+      minutosSugestao = Number(b.dataset.min);
+      document.querySelectorAll('#duracoes button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      sugerirRotas();
+    });
+  }
 
   // ---------- Imagem da rota ----------
   $('btn-imagem').addEventListener('click', async () => {

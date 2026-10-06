@@ -1,17 +1,18 @@
 # Mapa de Infraestrutura
 
-Mapa interativo (Leaflet) de locais com grande circulação de pessoas, a partir de bases públicas. Cobre o estado de São Paulo; na capital usa as bases da prefeitura (GeoSampa), mais detalhadas. Outras regiões entram como novas fontes em `camadas.json`.
+Mapa interativo (Leaflet) de locais com grande circulação de pessoas, a partir de bases públicas. Cobre os estados de São Paulo e Mato Grosso; na cidade de São Paulo usa as bases da prefeitura (GeoSampa), mais detalhadas. Outros estados entram pela lista `"regioes"` em `camadas.json`.
 
 - Filtra por tema (saúde, educação, transporte, serviços essenciais, cultura e lazer, religião) e por base, com um botão para marcar ou desmarcar todas. O tema Religião começa desligado, porque é muito denso.
 - Mostra os locais mais próximos de você (GPS ou ponto marcado no mapa).
 - Monta uma rota passando pelos pontos escolhidos, traçada pelas ruas (a pé) quando o serviço de rotas responde.
+- Botão "Sugerir boas rotas para mim" (aba Rota): monta opções de caminhada de 10, 30 ou 60 minutos a partir da sua localização (ou do centro do mapa), com três critérios: mais locais de interesse, equilibrada e mais votos em disputa. Cada opção mostra número de locais, tempo, distância, eleitores em disputa e temas; dá para ver no mapa e usar a que preferir. Pontos de ônibus não entram nas sugestões; o tempo não inclui as paradas.
 - Salva a rota como imagem PNG e gera um link para compartilhar a mesma rota.
-- Destaque eleitoral (liga e desliga no painel): realça os locais que ficam perto de locais de votação com muitos eleitores que não votaram em nenhum dos dois principais candidatos à Presidência (abstenções, brancos, nulos e votos nos demais candidatos). Dá para medir por número ou percentual, escolher o corte (10%, 20% ou 30% mais altos), comparar com o estado ou com o próprio município e definir a distância (300 m, 500 m ou 1 km).
+- Destaque eleitoral (liga e desliga no painel): realça os locais que ficam perto de locais de votação com muitos eleitores que não votaram em nenhum dos dois principais candidatos à Presidência (abstenções, brancos, nulos e votos nos demais candidatos). Dá para medir por número ou percentual, escolher o corte (10%, 20% ou 30% mais altos), comparar com o próprio estado ou com o próprio município e definir a distância (300 m, 500 m ou 1 km).
 - No celular, a área de toque de cada ponto é maior, para não precisar acertar o ponto exato.
 
 ## Bases
 
-| Tema | Base | Capital | Demais municípios |
+| Tema | Base | Cidade de São Paulo | Demais municípios (SP e MT) |
 |---|---|---|---|
 | Saúde | Hospitais | GeoSampa | CNES (tipos 5, 7 e 62) |
 | Saúde | UBS e postos de saúde | GeoSampa | CNES (tipos 1 e 2) |
@@ -33,7 +34,9 @@ Fontes:
 - **GeoSampa** (Prefeitura de São Paulo), serviço WFS `https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/ows`.
 - **CNES** (Ministério da Saúde, OpenDataSUS): arquivo `cnes_estabelecimentos.zip`, com coordenadas. A data do arquivo publicado pelo ministério pode ser antiga.
 - **Overture Maps** (licença CDLA Permissive 2.0) e **OpenStreetMap** (© colaboradores do OpenStreetMap, ODbL), lidos do Overture Maps. São bases colaborativas: podem faltar locais ou haver locais fechados.
-- **TSE** (dados abertos): boletins de urna do 1º turno de 2026 e cadastro de locais de votação (com coordenadas).
+- **TSE** (dados abertos): boletins de urna do 1º turno de 2026 (um arquivo por estado) e cadastro de locais de votação (com coordenadas).
+
+Para incluir outro estado, acrescente-o em `"regioes"` (sigla, nome e código IBGE), inclua os limites municipais dele em `data/municipios.geojson` e rode "Baixar dados".
 
 A confissão dos templos é deduzida pelo nome e pela categoria do Overture, com as regras de `"confissoes"` em `camadas.json` (ex.: "Paróquia", "Capela" → Católica; "Assembleia de Deus", "Batista" → Evangélica). Templos sem pista no nome ficam em "Cristã, sem confissão identificada".
 
@@ -76,7 +79,7 @@ vendor/               Leaflet 1.9.4
    }
    ```
 
-   Uma base pode juntar várias fontes (ex.: GeoSampa na capital e CNES no resto do estado). Os tipos de fonte e suas opções estão descritos no começo de `scripts/atualizar_dados.py`.
+   Uma base pode juntar várias fontes (ex.: GeoSampa na cidade de São Paulo e CNES no resto). Os tipos de fonte e suas opções estão descritos no começo de `scripts/atualizar_dados.py`.
    Para uma base muito grande, acrescente `"zoom_minimo": 15` para os pontos só aparecerem com o mapa aproximado.
 
 2. Gere os dados: na aba **Actions** do GitHub, rode "Baixar dados" (ou, no seu computador, `python3 scripts/atualizar_dados.py ceu`).

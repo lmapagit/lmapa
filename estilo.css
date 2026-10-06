@@ -385,3 +385,18 @@ input[type="search"] {
 .qtd-tema { margin-left: auto; font-size: 12.5px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
 .recolher { background: none; border: 1px solid var(--linha); border-radius: var(--raio); color: var(--tinta); width: 32px; height: 32px; cursor: pointer; font-size: 14px; }
 .camadas-tema .camada { padding-left: 4px; }
+/* Sugestão de rotas */
+.sugerir { display: grid; gap: 10px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--linha); }
+.botao.largo { width: 100%; }
+.painel-sugestoes { display: grid; gap: 10px; }
+.duracoes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.duracoes .botao[aria-pressed="true"] { background: var(--placa); color: var(--placa-texto); border-color: var(--placa); }
+.opcoes-rota { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.opcao-rota { border: 1px solid var(--linha); border-radius: var(--raio); padding: 10px 12px; background: var(--superficie); display: grid; gap: 6px; }
+.opcao-titulo { margin: 0; font-family: var(--fonte-titulo); font-weight: 800; }
+.opcao-dados { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 13.5px; }
+.opcao-dados dt { color: var(--tinta-suave); }
+.opcao-dados dd { margin: 0; font-variant-numeric: tabular-nums; }
+.opcao-temas { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; }
+.chip-tema { font-size: 12px; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--cor) 15%, transparent); color: var(--tinta); border: 1px solid var(--cor); }
+.marcador-numero.sugestao { opacity: .85; border-style: dashed; }

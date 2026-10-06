@@ -103,7 +103,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "ubs",
@@ -168,7 +168,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "urgencia",
@@ -234,7 +234,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "ambulatorios",
@@ -313,7 +313,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "escolas_publicas",
@@ -506,7 +506,7 @@
     },
     {
       "id": "escolas_estado",
-      "nome": "Escolas, todas as redes (outros municípios)",
+      "nome": "Escolas, todas as redes (fora da cidade de São Paulo)",
       "tema": "educacao",
       "simbolo": "E",
       "campos_popup": [
@@ -524,7 +524,7 @@
         }
       ],
       "pasta": "data/escolas_estado",
-      "cobertura": "Estado, fora da capital",
+      "cobertura": "SP (fora da capital) e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -689,7 +689,7 @@
           "url": "https://www.openstreetmap.org/copyright"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "terminais",
@@ -703,7 +703,7 @@
         }
       ],
       "pasta": "data/terminais",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "OpenStreetMap, via Overture Maps",
@@ -771,7 +771,8 @@
           "url": "https://www.openstreetmap.org/copyright"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)",
+      "sugerir": false
     },
     {
       "id": "bom_prato",
@@ -916,7 +917,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "bibliotecas",
@@ -976,7 +977,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "espacos_culturais",
@@ -1045,7 +1046,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "Estado (capital: GeoSampa)"
+      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "centros_esportivos",
@@ -1106,7 +1107,7 @@
         }
       ],
       "pasta": "data/religiao_catolica",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1147,7 +1148,7 @@
         }
       ],
       "pasta": "data/religiao_evangelica",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1189,7 +1190,7 @@
         }
       ],
       "pasta": "data/religiao_espirita",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1230,7 +1231,7 @@
         }
       ],
       "pasta": "data/religiao_matriz_africana",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1271,7 +1272,7 @@
         }
       ],
       "pasta": "data/religiao_outras",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1312,7 +1313,7 @@
         }
       ],
       "pasta": "data/religiao_crista_outras",
-      "cobertura": "Estado",
+      "cobertura": "SP e MT",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1339,21 +1340,14 @@
       "zoom_minimo": 12
     }
   ],
-  "regiao": {
-    "nome": "Estado de São Paulo",
-    "uf_ibge": "35",
-    "capital_ibge": "3550308",
-    "municipios": "data/municipios.geojson"
-  },
   "eleitoral": {
     "arquivo": "data/eleitoral/locais.json",
-    "uf": "SP",
     "turno": 1,
     "cargo": 1,
     "descricao": "Eleição presidencial de 2026, 1º turno",
     "locais_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/eleitorado_locais_votacao/eleitorado_local_votacao_2026.zip",
     "pacote_boletins": "resultados-2026-boletim-de-urna",
-    "boletins_url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2026/buweb/bweb_1t_SP_051020261403.zip",
+    "boletins_url": "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2026/buweb/bweb_1t_UF_051020261403.zip",
     "candidatos": [],
     "fonte": {
       "nome": "TSE: boletins de urna e locais de votação",
@@ -1403,6 +1397,22 @@
         "christian_place_of_worship",
         "place_of_worship"
       ]
+    }
+  ],
+  "municipios": "data/municipios.geojson",
+  "regioes": [
+    {
+      "uf": "SP",
+      "nome": "São Paulo",
+      "uf_ibge": "35",
+      "capital_ibge": "3550308",
+      "capital_com_fonte_municipal": true
+    },
+    {
+      "uf": "MT",
+      "nome": "Mato Grosso",
+      "uf_ibge": "51",
+      "capital_ibge": "5103403"
     }
   ]
 }
