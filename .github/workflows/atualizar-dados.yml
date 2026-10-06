@@ -1,22 +1,30 @@
+# Baixa as bases (GeoSampa, CNES, Overture Maps/OpenStreetMap e TSE) e grava em data/.
+# Só roda quando você pedir, pela aba Actions → "Baixar dados" → "Run workflow".
 name: Baixar dados
+
 on:
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   baixar:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Instalar bibliotecas (leitura do Overture Maps)
+        run: pip install pyarrow fsspec aiohttp
       - name: Baixar bases
         run: python3 scripts/atualizar_dados.py || echo "::warning::Alguma base não foi baixada; veja o log acima."
       - name: Salvar mudanças
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add -A data/
           git diff --cached --quiet || git commit -m "Baixa dados $(date +%F)"
           git push
