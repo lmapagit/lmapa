@@ -34,8 +34,7 @@
     {
       "id": "religiao",
       "nome": "Religião",
-      "cor": "#0e7c7b",
-      "ligado": false
+      "cor": "#0e7c7b"
     }
   ],
   "camadas": [
@@ -103,7 +102,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "ubs",
@@ -168,7 +167,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "urgencia",
@@ -234,7 +233,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "ambulatorios",
@@ -313,7 +312,7 @@
           "url": "https://opendatasus.saude.gov.br/dataset/cnes-cadastro-nacional-de-estabelecimentos-de-saude"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "escolas_publicas",
@@ -524,7 +523,7 @@
         }
       ],
       "pasta": "data/escolas_estado",
-      "cobertura": "SP (fora da capital) e MT",
+      "cobertura": "Brasil, exceto a cidade de São Paulo",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -637,7 +636,7 @@
     },
     {
       "id": "trem",
-      "nome": "Estações de trem (CPTM)",
+      "nome": "Estações de trem, metrô e VLT",
       "tema": "transporte",
       "simbolo": "T",
       "campos_popup": [
@@ -676,7 +675,7 @@
             "railway_halt",
             "subway_station"
           ],
-          "operador": "CPTM|Companhia Paulista de Trens|ViaMobilidade|Via Mobilidade|TIC|EMTU|BR Mobilidade|VLT|Metr"
+          "operador": "CPTM|Companhia Paulista de Trens|ViaMobilidade|Via Mobilidade|TIC|EMTU|BR Mobilidade|VLT|Metr|SuperVia|Supervia|CBTU|Trensurb|Metrofor|Metrorec|CCR|Vale|Estrada de Ferro|Companhia Cearense de Transportes|Teresina|Trem"
         }
       ],
       "creditos": [
@@ -689,7 +688,7 @@
           "url": "https://www.openstreetmap.org/copyright"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "terminais",
@@ -703,7 +702,7 @@
         }
       ],
       "pasta": "data/terminais",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "OpenStreetMap, via Overture Maps",
@@ -771,7 +770,7 @@
           "url": "https://www.openstreetmap.org/copyright"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)",
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)",
       "sugerir": false
     },
     {
@@ -917,7 +916,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "bibliotecas",
@@ -977,7 +976,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "espacos_culturais",
@@ -1046,7 +1045,7 @@
           "url": "https://overturemaps.org/"
         }
       ],
-      "cobertura": "SP e MT (na cidade de São Paulo: GeoSampa)"
+      "cobertura": "Brasil (na cidade de São Paulo: GeoSampa)"
     },
     {
       "id": "centros_esportivos",
@@ -1107,7 +1106,7 @@
         }
       ],
       "pasta": "data/religiao_catolica",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1148,7 +1147,7 @@
         }
       ],
       "pasta": "data/religiao_evangelica",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1190,7 +1189,7 @@
         }
       ],
       "pasta": "data/religiao_espirita",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1231,7 +1230,7 @@
         }
       ],
       "pasta": "data/religiao_matriz_africana",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1272,7 +1271,7 @@
         }
       ],
       "pasta": "data/religiao_outras",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1313,7 +1312,7 @@
         }
       ],
       "pasta": "data/religiao_crista_outras",
-      "cobertura": "SP e MT",
+      "cobertura": "Brasil",
       "creditos": [
         {
           "nome": "Overture Maps",
@@ -1341,7 +1340,7 @@
     }
   ],
   "eleitoral": {
-    "arquivo": "data/eleitoral/locais.json",
+    "pasta": "data/eleitoral",
     "turno": 1,
     "cargo": 1,
     "descricao": "Eleição presidencial de 2026, 1º turno",
@@ -1399,8 +1398,125 @@
       ]
     }
   ],
-  "municipios": "data/municipios.geojson",
+  "municipios": {
+    "pasta": "data/municipios",
+    "url": "https://raw.githubusercontent.com/tbrugz/geodata-br/master/geojson/geojs-{uf_ibge}-mun.json"
+  },
   "regioes": [
+    {
+      "uf": "RO",
+      "nome": "Rondônia",
+      "uf_ibge": "11",
+      "capital_ibge": "1100205"
+    },
+    {
+      "uf": "AC",
+      "nome": "Acre",
+      "uf_ibge": "12",
+      "capital_ibge": "1200401"
+    },
+    {
+      "uf": "AM",
+      "nome": "Amazonas",
+      "uf_ibge": "13",
+      "capital_ibge": "1302603"
+    },
+    {
+      "uf": "RR",
+      "nome": "Roraima",
+      "uf_ibge": "14",
+      "capital_ibge": "1400100"
+    },
+    {
+      "uf": "PA",
+      "nome": "Pará",
+      "uf_ibge": "15",
+      "capital_ibge": "1501402"
+    },
+    {
+      "uf": "AP",
+      "nome": "Amapá",
+      "uf_ibge": "16",
+      "capital_ibge": "1600303"
+    },
+    {
+      "uf": "TO",
+      "nome": "Tocantins",
+      "uf_ibge": "17",
+      "capital_ibge": "1721000"
+    },
+    {
+      "uf": "MA",
+      "nome": "Maranhão",
+      "uf_ibge": "21",
+      "capital_ibge": "2111300"
+    },
+    {
+      "uf": "PI",
+      "nome": "Piauí",
+      "uf_ibge": "22",
+      "capital_ibge": "2211001"
+    },
+    {
+      "uf": "CE",
+      "nome": "Ceará",
+      "uf_ibge": "23",
+      "capital_ibge": "2304400"
+    },
+    {
+      "uf": "RN",
+      "nome": "Rio Grande do Norte",
+      "uf_ibge": "24",
+      "capital_ibge": "2408102"
+    },
+    {
+      "uf": "PB",
+      "nome": "Paraíba",
+      "uf_ibge": "25",
+      "capital_ibge": "2507507"
+    },
+    {
+      "uf": "PE",
+      "nome": "Pernambuco",
+      "uf_ibge": "26",
+      "capital_ibge": "2611606"
+    },
+    {
+      "uf": "AL",
+      "nome": "Alagoas",
+      "uf_ibge": "27",
+      "capital_ibge": "2704302"
+    },
+    {
+      "uf": "SE",
+      "nome": "Sergipe",
+      "uf_ibge": "28",
+      "capital_ibge": "2800308"
+    },
+    {
+      "uf": "BA",
+      "nome": "Bahia",
+      "uf_ibge": "29",
+      "capital_ibge": "2927408"
+    },
+    {
+      "uf": "MG",
+      "nome": "Minas Gerais",
+      "uf_ibge": "31",
+      "capital_ibge": "3106200"
+    },
+    {
+      "uf": "ES",
+      "nome": "Espírito Santo",
+      "uf_ibge": "32",
+      "capital_ibge": "3205309"
+    },
+    {
+      "uf": "RJ",
+      "nome": "Rio de Janeiro",
+      "uf_ibge": "33",
+      "capital_ibge": "3304557"
+    },
     {
       "uf": "SP",
       "nome": "São Paulo",
@@ -1409,10 +1525,46 @@
       "capital_com_fonte_municipal": true
     },
     {
+      "uf": "PR",
+      "nome": "Paraná",
+      "uf_ibge": "41",
+      "capital_ibge": "4106902"
+    },
+    {
+      "uf": "SC",
+      "nome": "Santa Catarina",
+      "uf_ibge": "42",
+      "capital_ibge": "4205407"
+    },
+    {
+      "uf": "RS",
+      "nome": "Rio Grande do Sul",
+      "uf_ibge": "43",
+      "capital_ibge": "4314902"
+    },
+    {
+      "uf": "MS",
+      "nome": "Mato Grosso do Sul",
+      "uf_ibge": "50",
+      "capital_ibge": "5002704"
+    },
+    {
       "uf": "MT",
       "nome": "Mato Grosso",
       "uf_ibge": "51",
       "capital_ibge": "5103403"
+    },
+    {
+      "uf": "GO",
+      "nome": "Goiás",
+      "uf_ibge": "52",
+      "capital_ibge": "5208707"
+    },
+    {
+      "uf": "DF",
+      "nome": "Distrito Federal",
+      "uf_ibge": "53",
+      "capital_ibge": "5300108"
     }
   ]
 }

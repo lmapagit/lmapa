@@ -16,7 +16,10 @@
       clara: `${ESRI}World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
       escura: `${ESRI}Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
       imagem: `${ESRI}World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
-      opcoes: { maxZoom: 19, maxNativeZoom: 18 },
+      // Zoom máximo com imagem própria: acima disso o mapa amplia a última imagem disponível,
+      // em vez de mostrar blocos vazios (o fundo escuro da Esri só vai até o nível 16)
+      opcoes: { maxZoom: 18, maxNativeZoom: 17 },
+      opcoesEscura: { maxZoom: 18, maxNativeZoom: 16 },
       credito: 'Mapa base © <a href="https://www.esri.com">Esri</a>, HERE, Garmin, © OpenStreetMap',
       creditoTexto: 'Mapa base © Esri, HERE, Garmin, OpenStreetMap',
     },
@@ -86,16 +89,18 @@
     renderer: L.canvas({ tolerance: TOQUE ? 14 : 4, padding: 0.3 }),
     zoomControl: true,
     attributionControl: true,
+    maxZoom: 18,
   });
   let base = null;
   let municipios = null;
+  const ZOOM_ENQUADRAR = 16; // ao enquadrar rotas, não aproxima além disso
 
   function criarBase() {
     if (base) mapa.removeLayer(base);
     if (estado.semRuas) return;
     const prov = PROVEDORES[estado.provedor];
     const camada = L.tileLayer(temaEscuro() ? prov.escura : prov.clara, {
-      ...prov.opcoes,
+      ...(temaEscuro() && prov.opcoesEscura ? prov.opcoesEscura : prov.opcoes),
       crossOrigin: 'anonymous',
       attribution: prov.credito,
     }).addTo(mapa);
@@ -111,11 +116,17 @@
     setTimeout(() => { if (erros) desistir(); }, 5000);
   }
 
-  async function carregarMunicipios() {
-    if (municipios) return municipios;
-    const r = await fetch('data/municipios.geojson');
-    municipios = await r.json();
-    return municipios;
+  // Limites municipais: um arquivo por estado; só baixa os estados que cruzam a área pedida
+  const municipiosUF = new Map();
+  const cruza = (caixa, area) => area.intersects(L.latLngBounds([caixa[1], caixa[0]], [caixa[3], caixa[2]]));
+  async function carregarMunicipios(area) {
+    const pasta = estado.config.municipios.pasta;
+    municipios ||= lerJSON(`${pasta}/indice.json`);
+    const indice = await municipios;
+    const ufs = Object.keys(indice).filter((uf) => cruza(indice[uf].caixa, area));
+    for (const uf of ufs) if (!municipiosUF.has(uf)) municipiosUF.set(uf, lerJSON(`${pasta}/${uf}.geojson`));
+    const geos = await Promise.allSettled(ufs.map((uf) => municipiosUF.get(uf)));
+    return geos.filter((g) => g.status === 'fulfilled').map((g, i) => ({ uf: ufs[i], geo: g.value }));
   }
 
   // Quando os blocos do mapa de ruas não carregam (sem internet ou ambiente bloqueado),
@@ -124,14 +135,23 @@
     estado.semRuas = true;
     if (base) { mapa.removeLayer(base); base = null; }
     mostrarFaixa('O mapa de ruas não carregou aqui. Mostrando os limites dos municípios como fundo.');
+    mapa.attributionControl.addAttribution('Limites: IBGE');
+    mapa.on('moveend', desenharFundoSemRuas);
+    desenharFundoSemRuas();
+  }
+
+  const fundoDesenhado = new Set();
+  async function desenharFundoSemRuas() {
     try {
-      const geo = await carregarMunicipios();
       const css = getComputedStyle(document.documentElement);
-      L.geoJSON(geo, {
-        interactive: false,
-        style: () => ({ color: css.getPropertyValue('--tinta-suave').trim(), weight: 0.8, opacity: 0.6, fillColor: css.getPropertyValue('--superficie').trim(), fillOpacity: 0.9 }),
-      }).addTo(mapa).bringToBack();
-      mapa.attributionControl.addAttribution('Limites: IBGE');
+      for (const { uf, geo } of await carregarMunicipios(mapa.getBounds().pad(0.25))) {
+        if (fundoDesenhado.has(uf)) continue;
+        fundoDesenhado.add(uf);
+        L.geoJSON(geo, {
+          interactive: false,
+          style: () => ({ color: css.getPropertyValue('--tinta-suave').trim(), weight: 0.8, opacity: 0.6, fillColor: css.getPropertyValue('--superficie').trim(), fillOpacity: 0.9 }),
+        }).addTo(mapa).bringToBack();
+      }
     } catch { /* segue só com os pontos */ }
   }
 
@@ -145,7 +165,7 @@
 
   // ---------- Dados ----------
   // Cada base é uma pasta com indice.json e os pontos: num arquivo só (todos.json) ou,
-  // nas bases grandes, em blocos de meio grau. Só os blocos da área na tela são baixados.
+  // nas bases grandes, em blocos de um grau. Só os blocos da área na tela são baixados.
   async function lerJSON(url) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
@@ -158,8 +178,8 @@
     $('titulo').textContent = config.titulo;
     mapa.setView(config.centro_inicial, config.zoom_inicial);
     criarBase();
-    // Um tema pode começar desligado ("ligado": false em camadas.json), como Religião, que é muito denso
-    config.temas.forEach((t) => { estado.temas.set(t.id, t); if (t.ligado !== false) estado.temasAtivos.add(t.id); });
+    // Os temas começam desligados, salvo os marcados com "ligado": true em camadas.json
+    config.temas.forEach((t) => { estado.temas.set(t.id, t); if (t.ligado === true) estado.temasAtivos.add(t.id); });
 
     // Uma base cujo índice ainda não existe (ex.: antes da primeira atualização) aparece como pendente
     const indices = await Promise.all(config.camadas.map((c) => lerJSON(`${c.pasta}/indice.json`).catch((erro) => {
@@ -183,6 +203,7 @@
     c._atualizado = indice?.atualizado_em;
     c._pendente = !indice;
     c._blocos = new Map();   // bloco -> Promise do download
+    c._subgrupos = new Map(); // bloco -> grupo de marcadores
     estado.camadas.push(c);
     estado.grupos.set(c.id, L.layerGroup());
     estado.camadasAtivas.add(c.id);
@@ -207,16 +228,19 @@
   function carregarBloco(c, chave) {
     if (!c._blocos.has(chave)) {
       c._blocos.set(chave, lerJSON(`${c.pasta}/${chave}.json`)
-        .then((geo) => adicionarPontos(c, geo))
+        .then((geo) => adicionarPontos(c, geo, chave))
         .catch((erro) => { console.warn('Bloco não carregado', erro); c._blocos.delete(chave); }));
     }
     return c._blocos.get(chave);
   }
 
-  function adicionarPontos(c, geo) {
+  // Cada bloco tem seu próprio grupo de marcadores; só os blocos perto da tela ficam no mapa,
+  // para o desenho não ficar pesado depois de passear por várias cidades
+  function adicionarPontos(c, geo, chave = 'todos') {
     const tema = estado.temas.get(c.tema);
     const cor = c.cor || tema?.cor || '#555';
-    const grupo = estado.grupos.get(c.id);
+    if (!c._subgrupos.has(chave)) c._subgrupos.set(chave, L.layerGroup());
+    const grupo = c._subgrupos.get(chave);
     for (const f of geo?.features || []) {
       if (!f.geometry || f.geometry.type !== 'Point' || estado.pontos.has(f.properties.id)) continue;
       const [lng, lat] = f.geometry.coordinates;
@@ -229,13 +253,20 @@
         cor,
         latlng: L.latLng(lat, lng),
       };
-      p.marcador = L.circleMarker(p.latlng, estiloPonto(p))
-        .bindPopup(() => conteudoPopup(p), { maxWidth: 300 });
+      // Balão e rótulo só são criados no primeiro uso (economiza memória com muitos pontos)
+      p.marcador = L.circleMarker(p.latlng, estiloPonto(p));
+      p.marcador.once('click', () => { if (!p.marcador.getPopup()) abrirPopup(p); });
       // No celular o rótulo flutuante atrapalha o toque; o nome aparece no balão
-      if (!TOQUE) p.marcador.bindTooltip(p.nome, { direction: 'top', offset: [0, -6] });
+      if (!TOQUE) p.marcador.once('mouseover', () => p.marcador.bindTooltip(p.nome, { direction: 'top', offset: [0, -6] }).openTooltip());
+      p.grupo = grupo;
       p.marcador.addTo(grupo);
       estado.pontos.set(p.id, p);
     }
+  }
+
+  function abrirPopup(p) {
+    if (!p.marcador.getPopup()) p.marcador.bindPopup(() => conteudoPopup(p), { maxWidth: 300 });
+    p.marcador.openPopup();
   }
 
   const estiloBase = (p) => ({ radius: RAIO_PONTO, color: '#ffffff', weight: 1.5, opacity: 1, fillColor: p.cor, fillOpacity: 0.95 });
@@ -363,7 +394,7 @@
     const id = `camada-${c.id}`;
     const data = c._atualizado ? ` · atualizado em ${c._atualizado.split('-').reverse().join('/')}` : '';
     const qtd = c._pendente ? 'aguardando a primeira atualização' : `${c._qtd.toLocaleString('pt-BR')} locais`;
-    const zoom = c.zoom_minimo ? ' · aparece ao aproximar o mapa' : '';
+    const zoom = zoomMinimo(c) ? ' · aparece ao aproximar o mapa' : '';
     const cobertura = c.cobertura ? `${c.cobertura} · ` : '';
     const creditos = (c.creditos || []).flatMap((f, i) => [i ? ', ' : '',
       f.url ? el('a', { href: f.url, target: '_blank', rel: 'noopener' }, f.nome) : f.nome]);
@@ -377,6 +408,9 @@
     );
   }
 
+  // Bases divididas em blocos (as grandes) só aparecem a partir deste zoom, para não baixar o país inteiro
+  const ZOOM_BLOCOS = 9;
+  const zoomMinimo = (c) => c.zoom_minimo || (c._indice?.bloco_graus ? ZOOM_BLOCOS : 0);
   const visivel = (p) => estado.camadasAtivas.has(p.camada.id) && estado.temasAtivos.has(p.camada.tema);
 
   async function atualizarVisibilidade() {
@@ -384,7 +418,7 @@
     for (const c of estado.camadas) {
       const grupo = estado.grupos.get(c.id);
       const mostrar = estado.camadasAtivas.has(c.id) && estado.temasAtivos.has(c.tema)
-        && mapa.getZoom() >= (c.zoom_minimo || 0);
+        && mapa.getZoom() >= zoomMinimo(c);
       if (mostrar) for (const chave of blocosDaArea(c)) downloads.push(carregarBloco(c, chave));
       if (mostrar && !mapa.hasLayer(grupo)) grupo.addTo(mapa);
       if (!mostrar && mapa.hasLayer(grupo)) mapa.removeLayer(grupo);
@@ -394,8 +428,24 @@
       await Promise.all(downloads);
       $('carregando').hidden = true;
     }
+    sincronizarBlocos();
+    if (eleitoral.ligado && eleitoral.dados) {
+      try { if (await carregarEleitoral()) { recalcularEleitoral(); desenharPerto(); return; } } catch { /* segue com o que já tem */ }
+    }
     aplicarEleitoral();
     desenharPerto();
+  }
+
+  function sincronizarBlocos() {
+    for (const c of estado.camadas) {
+      const grupo = estado.grupos.get(c.id);
+      const perto = c._indice?.bloco_graus ? new Set(blocosDaArea(c)) : null;
+      for (const [chave, sub] of c._subgrupos) {
+        const ficar = !perto || perto.has(chave);
+        if (ficar && !grupo.hasLayer(sub)) grupo.addLayer(sub);
+        if (!ficar && grupo.hasLayer(sub)) grupo.removeLayer(sub);
+      }
+    }
   }
 
   // ---------- Destaque eleitoral ----------
@@ -406,8 +456,10 @@
   const COR_ABRIGA = '#111827';
   const eleitoral = {
     ligado: false,
-    dados: null,          // {metadata, locais:[...]}
+    dados: null,          // {metadata, locais:[...]}: só dos estados já baixados
     pedido: null,
+    indice: null,         // {metadata, campos, estados: {UF: {total, caixa}}}
+    estados: new Map(),   // UF -> download do arquivo do estado
     grade: new Map(),     // célula de 0,01° -> locais de votação
     medida: 'abs',
     corte: 20,
@@ -460,8 +512,8 @@
     ligar.addEventListener('change', async () => {
       eleitoral.ligado = ligar.checked;
       $('eleitoral-opcoes').hidden = !ligar.checked;
-      if (ligar.checked && !eleitoral.dados) {
-        $('eleitoral-resumo').textContent = 'Carregando os dados eleitorais…';
+      if (ligar.checked) {
+        if (!eleitoral.dados) $('eleitoral-resumo').textContent = 'Carregando os dados eleitorais…';
         try { await carregarEleitoral(); } catch (erro) {
           console.warn(erro);
           $('eleitoral-resumo').textContent = 'Os dados eleitorais ainda não foram baixados. Rode "Baixar dados" no GitHub.';
@@ -479,27 +531,42 @@
     $('eleitoral-esconder').addEventListener('change', (e) => { eleitoral.esconder = e.target.checked; recalcularEleitoral(); });
   }
 
-  async function carregarEleitoral() {
-    if (eleitoral.dados) return;
-    eleitoral.pedido ||= lerJSON(estado.config.eleitoral.arquivo);
-    const bruto = await eleitoral.pedido;
-    const ix = Object.fromEntries(bruto.campos.map((c, i) => [c, i]));
-    const locais = bruto.locais.map((r) => {
-      const l = {};
-      for (const [c, i] of Object.entries(ix)) l[c] = r[i];
-      l.fora = Math.max(l.aptos - l.c1 - l.c2, 0);
-      l.pct = l.aptos ? l.fora / l.aptos : 0;
-      l.latlng = L.latLng(l.lat, l.lng);
-      return l;
-    });
-    for (const l of locais) {
-      const k = celula(l.lat, l.lng);
-      if (!eleitoral.grade.has(k)) eleitoral.grade.set(k, []);
-      eleitoral.grade.get(k).push(l);
+  // Os locais de votação ficam num arquivo por estado; baixa o índice e os estados da área pedida
+  async function carregarEleitoral(area = mapa.getBounds().pad(0.25)) {
+    if (!eleitoral.dados) {
+      eleitoral.pedido ||= lerJSON(`${estado.config.eleitoral.pasta}/indice.json`);
+      const indice = await eleitoral.pedido;
+      if (!eleitoral.dados) {
+        eleitoral.indice = indice;
+        eleitoral.dados = { metadata: indice.metadata, locais: [] };
+        const [a, b] = nomesCandidatos();
+        $('eleitoral-explica').textContent = `Conta, em cada local de votação, quem não votou em ${a} nem em ${b}: abstenções, votos brancos, nulos e votos nos demais candidatos. ${indice.metadata.eleicao}.`;
+      }
     }
-    eleitoral.dados = { metadata: bruto.metadata, locais };
-    const [a, b] = nomesCandidatos();
-    $('eleitoral-explica').textContent = `Conta, em cada local de votação, quem não votou em ${a} nem em ${b}: abstenções, votos brancos, nulos e votos nos demais candidatos. ${bruto.metadata.eleicao}.`;
+    const { campos, estados } = eleitoral.indice;
+    const novos = Object.keys(estados).filter((uf) => !eleitoral.estados.has(uf) && cruza(estados[uf].caixa, area));
+    if (!novos.length) return false;
+    for (const uf of novos) {
+      eleitoral.estados.set(uf, lerJSON(`${estado.config.eleitoral.pasta}/${uf}.json`).then((bruto) => {
+        for (const r of bruto.locais) {
+          const l = { uf };
+          campos.forEach((c, i) => { l[c] = r[i]; });
+          l.fora = Math.max(l.aptos - l.c1 - l.c2, 0);
+          l.pct = l.aptos ? l.fora / l.aptos : 0;
+          l.latlng = L.latLng(l.lat, l.lng);
+          eleitoral.dados.locais.push(l);
+          const k = celula(l.lat, l.lng);
+          if (!eleitoral.grade.has(k)) eleitoral.grade.set(k, []);
+          eleitoral.grade.get(k).push(l);
+        }
+      }).catch((erro) => console.warn('Estado sem dados eleitorais', uf, erro)));
+    }
+    $('carregando').hidden = false;
+    await Promise.all(novos.map((uf) => eleitoral.estados.get(uf)));
+    $('carregando').hidden = true;
+    // vizinhanças calculadas antes podem ter mudado perto da divisa entre estados
+    for (const p of estado.pontos.values()) p._votosPerto = undefined;
+    return true;
   }
 
   // Marca como "destacados" os locais de votação no topo da medida escolhida
@@ -580,19 +647,20 @@
     eleitoralAplicado = Boolean(ativo);
     let perto = 0, abrigam = 0;
     for (const p of estado.pontos.values()) {
-      const grupo = estado.grupos.get(p.camada.id);
+      const grupo = p.grupo;
       if (!ativo) {
         if (p._eleitoral !== undefined) { p._eleitoral = undefined; p.marcador.setStyle(estiloBase(p)); }
         if (!grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
         continue;
       }
-      if (!p._eleitoral) p._eleitoral = vizinhosEleitorais(p);
-      p.marcador.setStyle(estiloPonto(p));
+      // só recalcula e repinta os pontos novos (ou todos, depois de mudar uma opção)
+      const novo = !p._eleitoral;
+      if (novo) { p._eleitoral = vizinhosEleitorais(p); p.marcador.setStyle(estiloPonto(p)); }
       const mostrar = !eleitoral.esconder || p._eleitoral.quente || p._eleitoral.abriga;
       if (mostrar && !grupo.hasLayer(p.marcador)) grupo.addLayer(p.marcador);
       if (!mostrar && grupo.hasLayer(p.marcador)) grupo.removeLayer(p.marcador);
       if (p._eleitoral.quente || p._eleitoral.abriga) {
-        if (visivel(p) && mapa.hasLayer(grupo)) p.marcador.bringToFront();
+        if (novo && visivel(p) && p.marcador._map) p.marcador.bringToFront();
         if (visivel(p) && p._eleitoral.quente) perto++;
         if (visivel(p) && p._eleitoral.abriga) abrigam++;
       }
@@ -600,7 +668,7 @@
     if (!ativo) return;
     const base = eleitoral.comparar === 'municipio' ? 'em cada município' : 'em cada estado';
     const simulado = eleitoral.dados.metadata.simulado ? ' Atenção: dados simulados, só para testar o funcionamento.' : '';
-    $('eleitoral-resumo').textContent = `${fmtN(eleitoral.destacados)} locais de votação destacados (os ${eleitoral.corte}% mais altos ${base}). `
+    $('eleitoral-resumo').textContent = `${fmtN(eleitoral.destacados)} locais de votação destacados (os ${eleitoral.corte}% mais altos ${base}, nos estados já carregados). `
       + `${fmtN(perto)} locais das bases ligadas, já carregados no mapa, ficam a até ${formatarDist(eleitoral.raio)} de um deles, `
       + `e ${fmtN(abrigam)} abrigam seções eleitorais.${simulado}`;
   }
@@ -638,7 +706,9 @@
 
 
   // ---------- Busca ----------
-  $('busca').addEventListener('input', (e) => {
+  let esperaBusca;
+  $('busca').addEventListener('input', (e) => { clearTimeout(esperaBusca); esperaBusca = setTimeout(() => buscar(e), 200); });
+  function buscar(e) {
     const termo = normalizar(e.target.value.trim());
     const caixa = $('resultados-busca');
     caixa.replaceChildren();
@@ -651,7 +721,7 @@
         el('span', { class: 'ponto', style: `--cor:${p.cor}` }),
         el('span', {}, p.nome, el('small', { style: 'display:block;color:var(--tinta-suave)' }, p.camada.nome)))));
     }
-  });
+  }
 
   async function focar(p) {
     if (!visivel(p)) {
@@ -659,9 +729,9 @@
       estado.temasAtivos.add(p.camada.tema);
       desenharTemas(); desenharCamadas();
     }
-    mapa.setView(p.latlng, Math.max(mapa.getZoom(), 15, p.camada.zoom_minimo || 0));
+    mapa.setView(p.latlng, Math.max(mapa.getZoom(), 15, zoomMinimo(p.camada)));
     await atualizarVisibilidade();
-    p.marcador.openPopup();
+    abrirPopup(p);
   }
 
   // ---------- Perto de mim ----------
@@ -715,11 +785,15 @@
     const lista = $('lista-perto');
     lista.replaceChildren();
     if (!estado.voce) return;
-    const perto = [...estado.pontos.values()]
-      .filter(visivel)
-      .map((p) => ({ p, d: estado.voce.distanceTo(p.latlng) }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 12);
+    // guarda só os 12 mais próximos, sem ordenar todos os pontos carregados
+    const perto = [];
+    for (const p of estado.pontos.values()) {
+      if (!visivel(p)) continue;
+      const d = estado.voce.distanceTo(p.latlng);
+      if (perto.length === 12 && d >= perto[11].d) continue;
+      perto.splice(perto.findIndex((x) => x.d > d) >>> 0, 0, { p, d });
+      if (perto.length > 12) perto.pop();
+    }
     for (const { p, d } of perto) {
       const naRota = estado.rota.includes(p.id);
       lista.append(el('li', {},
@@ -795,8 +869,9 @@
       L.marker(p.latlng, {
         icon: L.divIcon({ className: '', html: `<div class="marcador-numero" style="--cor:${p.cor}">${i + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
         zIndexOffset: 1000, title: p.nome,
-      }).on('click', () => p.marcador.openPopup()).addTo(camadaRota);
+      }).on('click', () => abrirPopup(p)).addTo(camadaRota);
     });
+    desenharNomesRuas();
 
     const totais = $('totais-rota');
     totais.hidden = pts.length < 2;
@@ -817,6 +892,92 @@
 
   let controleTracado = null;
   const cacheTracados = new Map();
+  // ---------- Nomes das ruas do trajeto ----------
+  // O serviço de rotas diz por quais ruas o trajeto passa; os nomes aparecem ao longo da rota,
+  // no mapa (com o mapa aproximado) e na imagem, sem se sobrepor uns aos outros nem às paradas.
+  const ZOOM_NOMES_RUAS = 15;
+  function ruasDoTrajeto(rota) {
+    const ruas = [];
+    let anterior = null;
+    for (const perna of rota.legs || []) {
+      for (const passo of perna.steps || []) {
+        const nome = (passo.name || '').trim();
+        const coords = (passo.geometry?.coordinates || []).map(([lng, lat]) => L.latLng(lat, lng));
+        if (!nome || coords.length < 2) { anterior = null; continue; }
+        if (anterior && anterior.nome === nome) { anterior.coords.push(...coords.slice(1)); anterior.distancia += passo.distance; continue; }
+        anterior = { nome, coords, distancia: passo.distance };
+        anterior.rotulo = abreviarLogradouro(nome);
+        ruas.push(anterior);
+      }
+    }
+    return ruas.filter((r) => r.distancia >= 40);
+  }
+
+  // Abreviações usuais de mapas, para os nomes caberem melhor ao longo da rua
+  const ABREVIACOES = [[/^Avenida\b/i, 'Av.'], [/^Alameda\b/i, 'Al.'], [/^Travessa\b/i, 'Tv.'], [/^Praça\b/i, 'Pç.'], [/^Estrada\b/i, 'Estr.'], [/^Rodovia\b/i, 'Rod.'], [/^Viaduto\b/i, 'Vd.'], [/^Largo\b/i, 'Lgo.']];
+  function abreviarLogradouro(nome) {
+    for (const [re, curta] of ABREVIACOES) if (re.test(nome)) return nome.replace(re, curta);
+    return nome;
+  }
+
+  // Ponto no meio do trecho (pela distância) e o segmento onde ele cai, para alinhar o texto
+  function meioDoTrecho(coords) {
+    let total = 0;
+    const d = coords.slice(1).map((c, i) => { const x = coords[i].distanceTo(c); total += x; return x; });
+    let falta = total / 2;
+    for (let i = 0; i < d.length; i++) {
+      if (falta <= d[i] || i === d.length - 1) {
+        const t = d[i] ? Math.min(falta / d[i], 1) : 0;
+        const a = coords[i], b = coords[i + 1];
+        return { latlng: L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t), a, b };
+      }
+      falta -= d[i];
+    }
+    return null;
+  }
+
+  // Escolhe onde escrever cada nome: as ruas mais longas primeiro; pula o que se sobrepõe
+  function posicionarNomesRuas(ruas, projetar, largura, altura, ocupados, afastar) {
+    const caixas = [...ocupados];
+    const colide = (c) => caixas.some((o) => c.x0 < o.x1 && c.x1 > o.x0 && c.y0 < o.y1 && c.y1 > o.y0);
+    const postos = [];
+    for (const rua of [...ruas].sort((x, y) => y.distancia - x.distancia)) {
+      const m = meioDoTrecho(rua.coords);
+      if (!m) continue;
+      const [mx, my] = projetar(m.latlng), [ax, ay] = projetar(m.a), [bx, by] = projetar(m.b);
+      let ang = Math.atan2(by - ay, bx - ax);
+      if (ang > Math.PI / 2) ang -= Math.PI; else if (ang < -Math.PI / 2) ang += Math.PI;   // texto nunca de cabeça para baixo
+      // escreve ao lado da linha da rota, não em cima dela
+      const dx = Math.sin(ang) * afastar, dy = -Math.cos(ang) * afastar;
+      const x = mx + dx, y = my + dy;
+      const w = largura(rua.rotulo), h = altura;
+      const cw = Math.abs(w * Math.cos(ang)) + Math.abs(h * Math.sin(ang)), ch = Math.abs(w * Math.sin(ang)) + Math.abs(h * Math.cos(ang));
+      // não escreve um nome maior que o próprio trecho na tela
+      if (Math.hypot(...[0, 1].map((k) => projetar(rua.coords[0])[k] - projetar(rua.coords.at(-1))[k])) < w * 0.6) continue;
+      const caixa = { x0: x - cw / 2, x1: x + cw / 2, y0: y - ch / 2, y1: y + ch / 2 };
+      if (colide(caixa)) continue;
+      caixas.push(caixa);
+      postos.push({ nome: rua.rotulo, latlng: m.latlng, x, y, ang, dx, dy });
+    }
+    return postos;
+  }
+
+  const camadaNomesRuas = L.layerGroup().addTo(mapa);
+  function desenharNomesRuas() {
+    camadaNomesRuas.clearLayers();
+    const ruas = estado.tracado?.nomesRuas;
+    if (!ruas?.length || mapa.getZoom() < ZOOM_NOMES_RUAS) return;
+    const projetar = (ll) => { const p = mapa.latLngToLayerPoint(ll); return [p.x, p.y]; };
+    const paradas = pontosDaRota().map((p) => { const [x, y] = projetar(p.latlng); return { x0: x - 16, x1: x + 16, y0: y - 16, y1: y + 16 }; });
+    for (const r of posicionarNomesRuas(ruas, projetar, (t) => t.length * 6.6 + 8, 16, paradas, 11)) {
+      L.marker(r.latlng, {
+        interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'nome-rua', html: `<span style="transform:translate(${r.dx}px,${r.dy}px) translate(-50%,-50%) rotate(${r.ang}rad)">${r.nome.replace(/[<>&]/g, '')}</span>`, iconSize: [0, 0] }),
+      }).addTo(camadaNomesRuas);
+    }
+  }
+  mapa.on('zoomend moveend', desenharNomesRuas);
+
   async function tracarRota() {
     const pts = pontosDaRota();
     if (controleTracado) controleTracado.abort();
@@ -829,7 +990,7 @@
     $('status-rota').textContent = 'Calculando o caminho pelas ruas…';
     try {
       const coords = pts.map((p) => `${p.latlng.lng.toFixed(6)},${p.latlng.lat.toFixed(6)}`).join(';');
-      const r = await fetch(`${ROTEADOR_A_PE}${coords}?overview=full&geometries=geojson`, { signal: ctrl.signal });
+      const r = await fetch(`${ROTEADOR_A_PE}${coords}?overview=full&geometries=geojson&steps=true`, { signal: ctrl.signal });
       const json = await r.json();
       if (json.code !== 'Ok') throw new Error(json.code);
       const rota = json.routes[0];
@@ -838,6 +999,7 @@
         distancia: rota.distance,
         duracao: (rota.distance / 1000 / VELOCIDADE_A_PE_KMH) * 3600,
         ruas: true,
+        nomesRuas: ruasDoTrajeto(rota),
       };
       cacheTracados.set(chave, tracado);
       if (controleTracado === ctrl) { estado.tracado = tracado; desenharRota(); }
@@ -899,7 +1061,7 @@
     rotaMudou();
     if (doLink && estado.rota.length) {
       abrirAba('rota');
-      mapa.fitBounds(L.latLngBounds(pontosDaRota().map((p) => p.latlng)).pad(0.3));
+      mapa.fitBounds(L.latLngBounds(pontosDaRota().map((p) => p.latlng)).pad(0.3), { maxZoom: ZOOM_ENQUADRAR });
     }
   }
 
@@ -942,9 +1104,9 @@
   }
 
   async function prepararCandidatos(origem, alcance) {
-    if (estado.config.eleitoral) { try { await carregarEleitoral(); } catch { /* segue sem votos */ } }
     // baixa os blocos da área do passeio, mesmo os de bases que só aparecem com o mapa aproximado
     const area = origem.toBounds(alcance * 2);
+    if (estado.config.eleitoral) { try { if (await carregarEleitoral(area) && eleitoral.ligado) recalcularEleitoral(); } catch { /* segue sem votos */ } }
     const downloads = [];
     for (const c of estado.camadas) {
       if (c.sugerir === false || !estado.camadasAtivas.has(c.id) || !estado.temasAtivos.has(c.tema)) continue;
@@ -1068,7 +1230,7 @@
       icon: L.divIcon({ className: '', html: `<div class="marcador-numero sugestao" style="--cor:${p.cor}">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] }),
       interactive: false,
     }).addTo(camadaSugestao));
-    mapa.fitBounds(L.latLngBounds(coords).pad(0.15));
+    mapa.fitBounds(L.latLngBounds(coords).pad(0.15), { maxZoom: ZOOM_ENQUADRAR });
   }
 
   function usarSugestao(o) {
@@ -1077,7 +1239,7 @@
     rotaMudou();
     $('painel-sugestoes').hidden = true;
     $('btn-sugerir').setAttribute('aria-expanded', 'false');
-    mapa.fitBounds(L.latLngBounds(o.pontos.map((p) => p.latlng)).pad(0.2));
+    mapa.fitBounds(L.latLngBounds(o.pontos.map((p) => p.latlng)).pad(0.2), { maxZoom: ZOOM_ENQUADRAR });
   }
 
   $('btn-sugerir').addEventListener('click', () => {
@@ -1228,9 +1390,9 @@
     }
     if (!comRuas) {
       try {
-        const geo = await carregarMunicipios();
+        const geos = await carregarMunicipios(L.latLngBounds(todos));
         ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#aab3c2'; ctx.lineWidth = 1.2;
-        for (const f of geo.features) {
+        for (const f of geos.flatMap((g) => g.geo.features)) {
           const polis = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
           for (const poli of polis) {
             ctx.beginPath();
@@ -1269,20 +1431,21 @@
       ctx.fillStyle = '#fff'; ctx.font = `800 22px ${fTitulo}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(i + 1), x, y + 1);
     }
-    // Etiquetas numeradas com o nome de cada parada, ao lado do marcador
-    ctx.font = `700 19px ${fTexto}`; ctx.textBaseline = 'middle';
-    pts.forEach((p, i) => {
-      const [x, y] = tela(p.latlng.lat, p.latlng.lng);
-      const texto = cortar(ctx, `${i + 1}. ${p.nome}`, 260);
-      const lw = ctx.measureText(texto).width + 24, lh = 34;
-      const direita = x + 32 + lw < W - 12;
-      const lx = direita ? x + 32 : x - 32 - lw, ly = y - lh / 2;
-      ctx.fillStyle = 'rgba(255,255,255,.95)';
-      ctx.beginPath(); ctx.roundRect(lx, ly, lw, lh, 8); ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = p.cor; ctx.stroke();
-      ctx.fillStyle = TINTA; ctx.textAlign = 'left';
-      ctx.fillText(texto, lx + 12, y + 1);
-    });
+    // Nomes das ruas ao longo do trajeto, sem cobrir as paradas nem a caixa de contagem
+    if (estado.tracado?.nomesRuas?.length) {
+      ctx.font = `700 17px ${fTexto}`;
+      const ocupados = pts.map((p) => { const [x, y] = tela(p.latlng.lat, p.latlng.lng); return { x0: x - 30, x1: x + 30, y0: y - 30, y1: y + 30 }; });
+      ocupados.push({ x0: W - 440, x1: W, y0: TOPO, y1: TOPO + 360 });
+      const postos = posicionarNomesRuas(estado.tracado.nomesRuas, (ll) => tela(ll.lat, ll.lng), (t) => ctx.measureText(t).width + 10, 22, ocupados, 19)
+        .filter((r) => r.x > 10 && r.x < W - 10 && r.y > TOPO + 10 && r.y < TOPO + MAPA_H - 10);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      for (const r of postos) {
+        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.ang);
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeText(r.nome, 0, 0);
+        ctx.fillStyle = SUAVE; ctx.fillText(r.nome, 0, 0);
+        ctx.restore();
+      }
+    }
     ctx.textBaseline = 'alphabetic';
     // Escala gráfica
     const metrosPorPx = (40075016.686 * Math.cos((todos[0].lat * Math.PI) / 180)) / (TAM * 2 ** z);
@@ -1354,11 +1517,13 @@
     // Lista de paradas
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, LISTA_Y, W, H - LISTA_Y);
     ctx.fillStyle = '#d8dee8'; ctx.fillRect(0, LISTA_Y, W, 2);
-    const colunas = pts.length > 5 ? 2 : 1;
-    const porColuna = Math.ceil(Math.min(pts.length, 10) / colunas);
+    // Os nomes das paradas ficam só nesta legenda (no mapa, só os números, para não se sobreporem)
+    const MAX_LISTA = 18;
+    const colunas = pts.length > 10 ? 3 : pts.length > 5 ? 2 : 1;
+    const porColuna = Math.ceil(Math.min(pts.length, MAX_LISTA) / colunas);
     const largCol = (W - 112 - (colunas - 1) * 40) / colunas;
     const alturaLinha = Math.min(62, (H - LISTA_Y - 110) / porColuna);
-    pts.slice(0, 10).forEach((p, i) => {
+    pts.slice(0, MAX_LISTA).forEach((p, i) => {
       const col = Math.floor(i / porColuna), lin = i % porColuna;
       const x = 56 + col * (largCol + 40), y = LISTA_Y + 44 + lin * alturaLinha;
       ctx.beginPath(); ctx.arc(x + 18, y + 12, 18, 0, Math.PI * 2); ctx.fillStyle = TINTA; ctx.fill();
@@ -1371,9 +1536,9 @@
       ctx.fillStyle = SUAVE; ctx.font = `400 18px ${fTexto}`;
       ctx.fillText(cortar(ctx, p.camada.nome, largCol - 56), x + 52, y + 36);
     });
-    if (pts.length > 10) {
+    if (pts.length > MAX_LISTA) {
       ctx.fillStyle = SUAVE; ctx.font = `700 20px ${fTexto}`; ctx.textAlign = 'right';
-      ctx.fillText(`+ ${pts.length - 10} paradas`, W - 56, H - 72);
+      ctx.fillText(`+ ${pts.length - MAX_LISTA} paradas`, W - 56, H - 72);
     }
     // Rodapé com fontes
     ctx.textAlign = 'left'; ctx.fillStyle = SUAVE; ctx.font = `400 17px ${fTexto}`;

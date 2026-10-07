@@ -400,3 +400,11 @@ input[type="search"] {
 .opcao-temas { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; }
 .chip-tema { font-size: 12px; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--cor) 15%, transparent); color: var(--tinta); border: 1px solid var(--cor); }
 .marcador-numero.sugestao { opacity: .85; border-style: dashed; }
+
+/* Nomes das ruas ao longo da rota */
+.nome-rua { pointer-events: none; }
+.nome-rua span {
+  position: absolute; left: 0; top: 0; white-space: nowrap;
+  font: 700 11px/1 var(--fonte-texto); color: var(--tinta);
+  text-shadow: 0 0 2px var(--superficie), 0 0 3px var(--superficie), 0 0 4px var(--superficie);
+}

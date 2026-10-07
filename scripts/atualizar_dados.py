@@ -15,7 +15,7 @@ Cada camada pode juntar várias fontes ("fontes" em camadas.json):
 
 Cada camada vira uma pasta data/<camada>/ com um índice (indice.json) e os
 pontos. Camadas grandes (ex.: pontos de ônibus do estado) são divididas em
-blocos de meio grau; o site só baixa os blocos da área que está na tela, o que
+blocos de um grau; o site só baixa os blocos da área que está na tela, o que
 mantém o mapa leve no celular. As demais ficam num arquivo só (todos.json).
 
 Opções de uma fonte "wfs":
@@ -28,7 +28,7 @@ Opções de uma fonte "wfs":
     lista           campos que viram lista ao agrupar
     tipo_por_prefixo  deduz o tipo pelo começo do nome
     municipio       nome do município, quando a fonte cobre uma cidade só
-Opções das fontes estaduais:
+Opções das fontes nacionais:
     fora_da_capital  descarta pontos da capital (que já vêm de uma fonte municipal)
     tipos_unidade    (cnes) códigos TP_UNIDADE do CNES; so_publicos: códigos em que só entram os públicos
     categorias       (overture_lugares) categorias do Overture; confianca_minima; nome_contem (expressão);
@@ -54,7 +54,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 CONFIG = RAIZ / "camadas.json"
-BLOCO = 0.5  # tamanho do bloco, em graus
+BLOCO = 1.0  # tamanho do bloco, em graus
 UM_ARQUIVO_ATE = 8000  # camadas até este tamanho ficam num arquivo só (data/<camada>/todos.json)
 AGENTE = {"User-Agent": "Mozilla/5.0 (compatible; mapa-dados/1.0)"}
 
@@ -118,22 +118,50 @@ def tipo_por_prefixo(nome, regras):
 
 # ---------- Municípios (para saber em que cidade cai cada ponto) ----------
 
+def preparar_municipios(config):
+    """Garante um arquivo de limites municipais por estado em data/municipios/<UF>.geojson
+    (baixa do IBGE, via tbrugz/geodata-br, os que faltarem) e grava o índice com a área de cada estado."""
+    cfg = config["municipios"]
+    pasta = RAIZ / cfg["pasta"]
+    pasta.mkdir(parents=True, exist_ok=True)
+    indice = {}
+    for r in config["regioes"]:
+        arq = pasta / f"{r['uf']}.geojson"
+        if not arq.exists():
+            geo = json.load(abrir(cfg["url"].format(uf_ibge=r["uf_ibge"])))
+            arredondar = lambda c: [arredondar(x) for x in c] if isinstance(c[0], list) else [round(c[0], 4), round(c[1], 4)]
+            feicoes = [{"type": "Feature",
+                        "properties": {"nome": f["properties"]["name"], "cod": str(f["properties"]["id"]), "uf": r["uf"]},
+                        "geometry": {"type": f["geometry"]["type"], "coordinates": arredondar(f["geometry"]["coordinates"])}}
+                       for f in geo["features"]]
+            arq.write_text(json.dumps({"type": "FeatureCollection", "metadata": {"fonte": "IBGE, via github.com/tbrugz/geodata-br"},
+                                       "features": feicoes}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            print(f"  limites municipais de {r['uf']}: {len(feicoes)} municípios")
+        geo = json.loads(arq.read_text(encoding="utf-8"))
+        pts = [pt for f in geo["features"] for pol in ([f["geometry"]["coordinates"]] if f["geometry"]["type"] == "Polygon" else f["geometry"]["coordinates"]) for a in pol for pt in a]
+        indice[r["uf"]] = {"nome": r["nome"], "caixa": [min(x for x, _ in pts), min(y for _, y in pts), max(x for x, _ in pts), max(y for _, y in pts)]}
+    (pasta / "indice.json").write_text(json.dumps(indice, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return [pasta / f"{r['uf']}.geojson" for r in config["regioes"]]
+
+
 class Municipios:
-    def __init__(self, caminho):
-        geo = json.loads((RAIZ / caminho).read_text(encoding="utf-8"))
+    TOLERANCIA = 0.005  # graus (~500 m): aceita pontos logo além do limite simplificado (praias, margens de rio)
+
+    def __init__(self, arquivos):
         self.itens, self.grade, self.uf_de = [], defaultdict(list), {}
-        for f in geo["features"]:
-            g = f["geometry"]
-            poligonos = [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"]
-            aneis = [anel for pol in poligonos for anel in pol]
-            xs = [x for a in aneis for x, _ in a]
-            ys = [y for a in aneis for _, y in a]
-            i = len(self.itens)
-            self.itens.append((f["properties"]["cod"], f["properties"]["nome"], aneis))
-            self.uf_de[f["properties"]["cod"]] = f["properties"].get("uf", "")
-            for gx in range(math.floor(min(xs) * 10), math.floor(max(xs) * 10) + 1):
-                for gy in range(math.floor(min(ys) * 10), math.floor(max(ys) * 10) + 1):
-                    self.grade[(gx, gy)].append(i)
+        for arq in arquivos:
+            for f in json.loads(Path(arq).read_text(encoding="utf-8"))["features"]:
+                g = f["geometry"]
+                poligonos = [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"]
+                aneis = [anel for pol in poligonos for anel in pol]
+                xs = [x for a in aneis for x, _ in a]
+                ys = [y for a in aneis for _, y in a]
+                i = len(self.itens)
+                self.itens.append((f["properties"]["cod"], f["properties"]["nome"], aneis))
+                self.uf_de[f["properties"]["cod"]] = f["properties"].get("uf", "")
+                for gx in range(math.floor(min(xs) * 10), math.floor(max(xs) * 10) + 1):
+                    for gy in range(math.floor(min(ys) * 10), math.floor(max(ys) * 10) + 1):
+                        self.grade[(gx, gy)].append(i)
 
     @staticmethod
     def _dentro(x, y, aneis):
@@ -148,6 +176,16 @@ class Municipios:
                 j = i
         return dentro
 
+    @staticmethod
+    def _distancia(x, y, aneis):
+        menor = math.inf
+        for anel in aneis:
+            for (xi, yi), (xj, yj) in zip(anel, anel[1:]):
+                dx, dy = xj - xi, yj - yi
+                t = max(0, min(1, ((x - xi) * dx + (y - yi) * dy) / (dx * dx + dy * dy))) if dx or dy else 0
+                menor = min(menor, math.hypot(x - xi - t * dx, y - yi - t * dy))
+        return menor
+
     def caixa(self, uf):
         """Retângulo (x0, y0, x1, y1) que envolve os municípios da UF."""
         pts = [pt for cod, _, aneis in self.itens if self.uf_de[cod] == uf for a in aneis for pt in a]
@@ -155,11 +193,17 @@ class Municipios:
 
     def achar(self, lon, lat):
         """(código IBGE, nome) do município que contém o ponto, ou None fora dos estados cobertos."""
-        for i in self.grade.get((math.floor(lon * 10), math.floor(lat * 10)), []):
+        candidatos = self.grade.get((math.floor(lon * 10), math.floor(lat * 10)), [])
+        for i in candidatos:
             cod, nome, aneis = self.itens[i]
             if self._dentro(lon, lat, aneis):
                 return cod, nome
-        return None
+        perto, menor = None, self.TOLERANCIA
+        for i in candidatos:
+            d = self._distancia(lon, lat, self.itens[i][2])
+            if d < menor:
+                perto, menor = self.itens[i][:2], d
+        return perto
 
 
 # ---------- Fonte: WFS (GeoSampa) ----------
@@ -245,6 +289,8 @@ def fonte_wfs(cfg, ctx):
 # ---------- Fonte: CNES ----------
 
 CNES_URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/CNES/cnes_estabelecimentos.zip"
+CNES_COLUNAS = {"CO_CNES", "TP_UNIDADE", "CO_NATUREZA_JUR", "NU_LATITUDE", "NU_LONGITUDE", "NO_FANTASIA", "NO_RAZAO_SOCIAL",
+                "NO_LOGRADOURO", "NU_ENDERECO", "NO_BAIRRO", "NU_TELEFONE"}
 NATUREZA = {"1": "Pública", "2": "Privada", "3": "Filantrópica / sem fins lucrativos", "4": "Privada"}
 
 
@@ -256,9 +302,13 @@ def carregar_cnes(ctx):
         with zipfile.ZipFile(arquivo) as z:
             nome = next(n for n in z.namelist() if n.lower().endswith(".csv"))
             with z.open(nome) as bruto:
-                for r in csv.DictReader(io.TextIOWrapper(bruto, encoding="latin-1"), delimiter=";"):
-                    if r["CO_UF"] in ufs:
-                        linhas.append(r)
+                leitor = csv.reader(io.TextIOWrapper(bruto, encoding="latin-1"), delimiter=";")
+                cab = next(leitor)
+                usadas = [i for i, c in enumerate(cab) if c in CNES_COLUNAS]
+                i_uf = cab.index("CO_UF")
+                for linha in leitor:
+                    if len(linha) > i_uf and linha[i_uf] in ufs:
+                        linhas.append({cab[i]: linha[i] for i in usadas if i < len(linha)})
         Path(arquivo).unlink()
         ctx["cnes"] = linhas
         print(f"  CNES: {len(linhas)} estabelecimentos nos estados cobertos")
@@ -538,18 +588,31 @@ def coordenada(v):
 
 
 def ler_boletins(arq, cargo, turno, aptos, nomes, total_cand, votos, por_tipo):
-    for r in ler_csv_zip(arq, lambda r: r.get("CD_CARGO_PERGUNTA") == cargo and r.get("NR_TURNO", turno) == turno):
-        sec = (r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_SECAO"])
-        aptos[sec] = numero(r["QT_APTOS"])
-        tipo = limpar(r.get("DS_TIPO_VOTAVEL")).lower()
-        qt = numero(r["QT_VOTOS"])
-        if tipo == "nominal":
-            nr = r["NR_VOTAVEL"]
-            votos[sec][nr] += qt
-            total_cand[nr] += qt
-            nomes[nr] = titulo(limpar(r.get("NM_VOTAVEL")))
-        elif tipo in ("branco", "nulo"):
-            por_tipo[sec][tipo] += qt
+    # Arquivos grandes (todas as seções e cargos do estado): lê por posição de coluna, que é bem mais rápido
+    with zipfile.ZipFile(arq) as z:
+        for nome in [n for n in z.namelist() if n.lower().endswith(".csv")]:
+            with z.open(nome) as bruto:
+                leitor = csv.reader(io.TextIOWrapper(bruto, encoding="latin-1"), delimiter=";", quotechar='"')
+                cab = next(leitor)
+                c = {n: cab.index(n) for n in ("CD_CARGO_PERGUNTA", "CD_MUNICIPIO", "NR_ZONA", "NR_SECAO", "QT_APTOS",
+                                               "DS_TIPO_VOTAVEL", "QT_VOTOS", "NR_VOTAVEL", "NM_VOTAVEL")}
+                i_turno = cab.index("NR_TURNO") if "NR_TURNO" in cab else None
+                i_cargo = c["CD_CARGO_PERGUNTA"]
+                for r in leitor:
+                    if len(r) < len(cab) or r[i_cargo] != cargo or (i_turno is not None and r[i_turno] != turno):
+                        continue
+                    sec = (r[c["CD_MUNICIPIO"]], r[c["NR_ZONA"]], r[c["NR_SECAO"]])
+                    aptos[sec] = numero(r[c["QT_APTOS"]])
+                    tipo = r[c["DS_TIPO_VOTAVEL"]].strip().lower()
+                    qt = numero(r[c["QT_VOTOS"]])
+                    if tipo == "nominal":
+                        nr = r[c["NR_VOTAVEL"]]
+                        votos[sec][nr] += qt
+                        total_cand[nr] += qt
+                        if nr not in nomes:
+                            nomes[nr] = titulo(limpar(r[c["NM_VOTAVEL"]]))
+                    elif tipo in ("branco", "nulo"):
+                        por_tipo[sec][tipo] += qt
 
 
 def atualizar_eleitoral(config, ctx):
@@ -610,39 +673,48 @@ def atualizar_eleitoral(config, ctx):
     if sem_local:
         print(f"  aviso: {sem_local} seções sem local de votação correspondente")
 
-    campos = ["lat", "lng", "nome", "endereco", "municipio", "aptos", "abstencoes", "brancos", "nulos", "outros", "c1", "c2", "uf"]
-    linhas, sem_coord = [], 0
+    campos = ["lat", "lng", "nome", "endereco", "municipio", "aptos", "abstencoes", "brancos", "nulos", "outros", "c1", "c2"]
+    por_uf, sem_coord = defaultdict(list), 0
     for chave_local, s in soma.items():
         loc = locais[chave_local]
         if loc["lat"] is None or loc["lon"] is None:
             sem_coord += 1
             continue
-        linhas.append([round(loc["lat"], 6), round(loc["lon"], 6), loc["nome"], loc["endereco"], loc["municipio"],
-                       s["aptos"], s["abstencoes"], s["brancos"], s["nulos"], s["outros"], s["c1"], s["c2"], loc["uf"]])
+        por_uf[loc["uf"]].append([round(loc["lat"], 6), round(loc["lon"], 6), loc["nome"], loc["endereco"], loc["municipio"],
+                                  s["aptos"], s["abstencoes"], s["brancos"], s["nulos"], s["outros"], s["c1"], s["c2"]])
     if sem_coord:
         print(f"  aviso: {sem_coord} locais de votação sem coordenadas ficaram de fora")
-    saida = {
+
+    # Um arquivo por estado (o site só baixa os estados que aparecem na tela) e um índice
+    pasta = RAIZ / cfg["pasta"]
+    if pasta.exists():
+        shutil.rmtree(pasta)
+    pasta.mkdir(parents=True)
+    estados = {}
+    for uf, linhas in sorted(por_uf.items()):
+        (pasta / f"{uf}.json").write_text(json.dumps({"locais": linhas}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        lats, lngs = [l[0] for l in linhas], [l[1] for l in linhas]
+        estados[uf] = {"total": len(linhas), "caixa": [min(lngs), min(lats), max(lngs), max(lats)]}
+    indice = {
         "metadata": {
             "fonte": "Tribunal Superior Eleitoral (dados abertos)",
             "eleicao": cfg["descricao"],
             "atualizado_em": date.today().isoformat(),
             "candidatos": [{"numero": n, "nome": nomes.get(n, n)} for n in principais],
-            "total": len(linhas),
+            "total": sum(e["total"] for e in estados.values()),
         },
         "campos": campos,
-        "locais": linhas,
+        "estados": estados,
     }
-    destino = RAIZ / cfg["arquivo"]
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(json.dumps(saida, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"eleitoral: {len(linhas)} locais de votação -> {cfg['arquivo']}")
+    (pasta / "indice.json").write_text(json.dumps(indice, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"eleitoral: {indice['metadata']['total']} locais de votação em {len(estados)} estados -> {cfg['pasta']}")
 
 
 # ---------- Principal ----------
 
 def main(filtro):
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
-    municipios = Municipios(config["municipios"])
+    municipios = Municipios(preparar_municipios(config))
     regioes = config["regioes"]
     ctx = {"config": config, "municipios": municipios, "regioes": regioes,
            "caixas": [municipios.caixa(r["uf"]) for r in regioes]}
